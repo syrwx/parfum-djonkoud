@@ -4,7 +4,7 @@ import { useStore } from '../context/StoreContext';
 import Button from '../components/ui/Button';
 import { CURRENCY } from '../constants';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, MessageCircle, Phone, Loader2, Globe, Truck } from 'lucide-react';
+import { CreditCard, MessageCircle, Loader2, Globe, Truck, Sparkles, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Checkout: React.FC = () => {
@@ -48,6 +48,28 @@ const Checkout: React.FC = () => {
   }, [country]);
 
   const grandTotal = cartTotal + shippingCost;
+  const isInternational = country !== 'Mali';
+
+  // --- LOGIQUE DE SÉLECTION INTELLIGENTE DE L'AGENT ---
+  const getTargetAgent = () => {
+     const agents = contactInfo.whatsAppAgents || [];
+     
+     // 1. Si International -> Chercher agent 'export'
+     if (isInternational) {
+       const exportAgent = agents.find(a => a.role === 'export' && a.active);
+       if (exportAgent) return exportAgent;
+     }
+
+     // 2. Si grosse commande (> 100,000 FCFA) -> Chercher agent 'wholesale'
+     if (cartTotal > 100000) {
+        const wholesaleAgent = agents.find(a => a.role === 'wholesale' && a.active);
+        if (wholesaleAgent) return wholesaleAgent;
+     }
+
+     // 3. Sinon -> Chercher agent 'general' ou le premier dispo
+     const generalAgent = agents.find(a => a.role === 'general' && a.active);
+     return generalAgent || agents[0];
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -56,12 +78,21 @@ const Checkout: React.FC = () => {
   const handleWhatsAppCheckout = () => {
     if (cart.length === 0) return;
     
-    const adminPhone = contactInfo.phone.replace(/[^0-9]/g, ''); 
+    const targetAgent = getTargetAgent();
+    
+    if (!targetAgent || !targetAgent.phone) {
+        toast.error("Service WhatsApp momentanément indisponible.");
+        return;
+    }
 
-    let message = `*NOUVELLE COMMANDE INTERNATIONALE (${country.toUpperCase()})*\n\n`;
+    // Nettoyage du numéro
+    const cleanPhone = targetAgent.phone.replace(/[^0-9]/g, ''); 
+
+    let message = `*NOUVELLE COMMANDE (${country.toUpperCase()})*\n`;
+    message += `Destinataire: *${targetAgent.name}*\n\n`;
     message += `👤 *Client:* ${formData.name || 'Non spécifié'}\n`;
     message += `🌍 *Pays:* ${country}\n`;
-    message += `Cw *Ville:* ${formData.city || 'Non spécifié'}\n`;
+    message += `🏙 *Ville:* ${formData.city || 'Non spécifié'}\n`;
     message += `📞 *Tel:* ${formData.phone || 'Non spécifié'}\n`;
     message += `📍 *Adresse:* ${formData.address || 'Non spécifié'}\n\n`;
     message += `🛒 *PANIER:*\n`;
@@ -77,12 +108,13 @@ const Checkout: React.FC = () => {
       message += `📝 *Note:* ${formData.instructions}`;
     }
 
-    const url = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
-    toast.success("Redirection vers WhatsApp...");
+    toast.success(`Redirection vers ${targetAgent.name}...`);
   };
 
   const handlePayment = async () => {
+    // ... (Code existant inchangé pour le paiement classique)
     if (!paymentMethod) {
       toast.error("Veuillez choisir un mode de paiement");
       return;
@@ -135,6 +167,8 @@ const Checkout: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const activeAgent = getTargetAgent();
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-16">
@@ -218,50 +252,65 @@ const Checkout: React.FC = () => {
                <span>{grandTotal.toLocaleString()} {CURRENCY}</span>
              </div>
              
-             {/* International Warning */}
-             {country !== 'Mali' && (
-                <div className="mb-6 p-3 bg-blue-900/20 border border-blue-800/50 text-xs text-blue-200">
-                  <span className="font-bold">🌍 Note International :</span> Pour les livraisons hors Mali, nous recommandons de passer par WhatsApp pour organiser la logistique (DHL, GP, etc.) et confirmer les frais.
-                </div>
-             )}
+             {/* International Logic UI */}
+             {isInternational ? (
+               // INTERNATIONAL UI
+               <div className="space-y-4">
+                 <div className="p-4 bg-gradient-to-r from-amber-900/40 to-black border border-amber-500/50 rounded animate-fade-in">
+                    <h3 className="text-amber-400 font-bold flex items-center gap-2 mb-2">
+                      <Sparkles size={18} /> Service Export VIP
+                    </h3>
+                    <p className="text-sm text-neutral-300 mb-4 leading-relaxed">
+                      Expéditions vers <strong>{country}</strong>. Prise en charge par le service export (DHL, GP).
+                    </p>
+                    <button 
+                      onClick={handleWhatsAppCheckout}
+                      className="w-full py-4 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold flex items-center justify-center gap-2 transition-all uppercase tracking-widest text-sm shadow-lg border border-amber-400/30"
+                    >
+                      <MessageCircle size={18} /> Discuter avec {activeAgent?.name}
+                    </button>
+                 </div>
+               </div>
+             ) : (
+               // LOCAL MALI UI
+               <div className="space-y-6">
+                 {/* Logic Bonus: Si grosse commande, on propose le service grossiste */}
+                 {cartTotal > 100000 && (
+                   <div className="p-3 bg-purple-900/20 border border-purple-500/30 text-xs text-purple-200 flex items-center gap-2">
+                      <Users size={16} /> 
+                      <span className="font-bold">Commande Volumineuse :</span> Vous serez redirigé vers le service Grossistes.
+                   </div>
+                 )}
 
-             {/* WhatsApp Option - High Priority */}
-             <div className="mb-6 p-4 bg-green-950/30 border border-green-600/50 rounded shadow-lg shadow-green-900/10">
-                <button 
-                  onClick={handleWhatsAppCheckout}
-                  className="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-bold flex items-center justify-center gap-2 transition-colors uppercase tracking-widest text-sm shadow-md"
-                >
-                  <MessageCircle size={18} /> 
-                  {country === 'Mali' ? 'Commander sur WhatsApp' : 'Devis International (WhatsApp)'}
-                </button>
-             </div>
+                 <div className="p-4 bg-green-950/30 border border-green-600/50 rounded shadow-lg shadow-green-900/10">
+                    <button 
+                      onClick={handleWhatsAppCheckout}
+                      className="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-bold flex items-center justify-center gap-2 transition-colors uppercase tracking-widest text-sm shadow-md"
+                    >
+                      <MessageCircle size={18} /> Commander via {activeAgent?.name}
+                    </button>
+                 </div>
 
-             <div className="relative flex py-4 items-center">
-                <div className="flex-grow border-t border-neutral-800"></div>
-                <span className="flex-shrink-0 mx-4 text-neutral-500 text-xs uppercase">Ou paiement direct</span>
-                <div className="flex-grow border-t border-neutral-800"></div>
-             </div>
+                 <div className="relative flex py-4 items-center">
+                    <div className="flex-grow border-t border-neutral-800"></div>
+                    <span className="flex-shrink-0 mx-4 text-neutral-500 text-xs uppercase">Ou paiement direct</span>
+                    <div className="flex-grow border-t border-neutral-800"></div>
+                 </div>
 
-             <div className="space-y-3 mb-8">
-               {(country === 'Mali' || country === 'CoteIvoire' || country === 'Senegal') && (
-                 <>
+                 <div className="space-y-3 mb-8">
                    <button onClick={() => setPaymentMethod('WAVE')} className={`w-full p-3 border flex justify-between ${paymentMethod === 'WAVE' ? 'border-amber-500 bg-amber-900/20' : 'border-neutral-700'}`}>
                      <span className="text-blue-400 font-bold">Wave</span>
                    </button>
                    <button onClick={() => setPaymentMethod('OM')} className={`w-full p-3 border flex justify-between ${paymentMethod === 'OM' ? 'border-amber-500 bg-amber-900/20' : 'border-neutral-700'}`}>
                      <span className="text-orange-500 font-bold">Orange Money</span>
                    </button>
-                 </>
-               )}
-               
-               <button onClick={() => setPaymentMethod('CARD')} className={`w-full p-3 border flex justify-between ${paymentMethod === 'CARD' ? 'border-amber-500 bg-amber-900/20' : 'border-neutral-700'}`}>
-                 <span className="text-white font-bold flex items-center gap-2"><CreditCard size={16}/> Carte Bancaire (Visa/Mastercard)</span>
-               </button>
-             </div>
+                 </div>
 
-             <Button fullWidth onClick={handlePayment} disabled={loading}>
-               {loading ? <span className="flex items-center gap-2"><Loader2 className="animate-spin" size={18}/> Traitement...</span> : 'Confirmer la Commande'}
-             </Button>
+                 <Button fullWidth onClick={handlePayment} disabled={loading}>
+                   {loading ? <span className="flex items-center gap-2"><Loader2 className="animate-spin" size={18}/> Traitement...</span> : 'Confirmer la Commande'}
+                 </Button>
+               </div>
+             )}
           </div>
         </div>
       </div>

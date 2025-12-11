@@ -1,3 +1,4 @@
+
 export interface Product {
   id: string;
   name: string;
@@ -46,6 +47,14 @@ export interface Order {
   shippingAddress?: string;
 }
 
+export interface WhatsAppAgent {
+  id: string;
+  name: string; // ex: "Service Commercial", "Service Export"
+  phone: string;
+  role: 'general' | 'export' | 'wholesale' | 'support';
+  active: boolean;
+}
+
 export interface ContactInfo {
   address: string;
   phone: string;
@@ -54,6 +63,7 @@ export interface ContactInfo {
   instagram?: string;
   facebook?: string;
   twitter?: string;
+  whatsAppAgents: WhatsAppAgent[]; // Nouvelle gestion d'équipe
 }
 
 export interface SiteSettings {

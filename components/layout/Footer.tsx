@@ -74,7 +74,6 @@ const Footer: React.FC = () => {
              <span>Paiement sécurisé par</span>
              <span className="text-amber-700 font-bold">WAVE</span>
              <span className="text-orange-600 font-bold">ORANGE MONEY</span>
-             <Link to="/admin/login" className="text-neutral-800 hover:text-neutral-600 ml-4">Admin</Link>
           </div>
         </div>
       </div>

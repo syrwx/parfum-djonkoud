@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, Menu, X, User, Search } from 'lucide-react';
+import { ShoppingBag, Menu, X, Search } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import Logo from '../Logo';
 
@@ -53,9 +53,7 @@ const Navbar: React.FC = () => {
             <Link to="/shop" className="text-amber-100 hover:text-amber-400 transition-colors hidden sm:block" title="Rechercher un produit">
               <Search size={20} />
             </Link>
-            <Link to="/admin/login" className="text-amber-100 hover:text-amber-400 transition-colors hidden sm:block" title="Espace Client / Admin">
-              <User size={20} />
-            </Link>
+            {/* Lien Admin retiré pour invisibilité */}
             <Link to="/cart" className="relative text-amber-100 hover:text-amber-400 transition-colors">
               <ShoppingBag size={22} />
               {cartCount > 0 && (
@@ -75,7 +73,7 @@ const Navbar: React.FC = () => {
           <Link to="/shop" className="block px-3 py-3 text-amber-100 hover:text-amber-400 uppercase tracking-widest border-b border-neutral-800">Collection</Link>
           <Link to="/guide" className="block px-3 py-3 text-amber-100 hover:text-amber-400 uppercase tracking-widest border-b border-neutral-800">Guide IA</Link>
           <Link to="/about" className="block px-3 py-3 text-amber-100 hover:text-amber-400 uppercase tracking-widest border-b border-neutral-800">La Maison</Link>
-          <Link to="/admin/login" className="block px-3 py-3 text-amber-100 hover:text-amber-400 uppercase tracking-widest">Connexion Admin</Link>
+          {/* Lien Admin retiré du menu mobile */}
         </div>
       </div>
     </nav>

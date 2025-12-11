@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
-import { ContactInfo, SiteSettings } from '../../types';
+import { ContactInfo, SiteSettings, WhatsAppAgent } from '../../types';
 import Button from '../../components/ui/Button';
-import { Save, MapPin, Phone, Mail, Clock, Globe, Layout, Image as ImageIcon, Type } from 'lucide-react';
+import { Save, MapPin, Mail, Clock, Globe, Layout, Image as ImageIcon, MessageCircle, Plus, Trash2, Edit2, ShieldCheck, Truck, Users, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Settings: React.FC = () => {
   const { contactInfo, updateContactInfo, siteSettings, updateSiteSettings } = useStore();
   
-  const [activeTab, setActiveTab] = useState<'contact' | 'appearance'>('contact');
+  const [activeTab, setActiveTab] = useState<'contact' | 'whatsapp' | 'appearance'>('contact');
   const [contactData, setContactData] = useState<ContactInfo>(contactInfo);
   const [appearanceData, setAppearanceData] = useState<SiteSettings>(siteSettings);
+  
+  // State pour l'édition d'un agent
+  const [editingAgent, setEditingAgent] = useState<Partial<WhatsAppAgent> | null>(null);
 
   // Sync state with global store
   useEffect(() => {
@@ -40,6 +43,54 @@ const Settings: React.FC = () => {
     setAppearanceData(prev => ({ ...prev, [name]: value }));
   };
 
+  // --- GESTION AGENTS WHATSAPP ---
+  const handleAddAgent = () => {
+    const newAgent: WhatsAppAgent = {
+      id: Date.now().toString(),
+      name: '',
+      phone: '',
+      role: 'general',
+      active: true
+    };
+    setEditingAgent(newAgent);
+  };
+
+  const saveAgent = () => {
+    if (!editingAgent || !editingAgent.name || !editingAgent.phone) return;
+    
+    let newAgents = [...contactData.whatsAppAgents];
+    const existingIndex = newAgents.findIndex(a => a.id === editingAgent.id);
+    
+    if (existingIndex >= 0) {
+      newAgents[existingIndex] = editingAgent as WhatsAppAgent;
+    } else {
+      newAgents.push(editingAgent as WhatsAppAgent);
+    }
+
+    const newContactInfo = { ...contactData, whatsAppAgents: newAgents };
+    setContactData(newContactInfo);
+    updateContactInfo(newContactInfo); // Save immediately
+    setEditingAgent(null);
+    toast.success("Numéro WhatsApp enregistré");
+  };
+
+  const deleteAgent = (id: string) => {
+    const newAgents = contactData.whatsAppAgents.filter(a => a.id !== id);
+    const newContactInfo = { ...contactData, whatsAppAgents: newAgents };
+    setContactData(newContactInfo);
+    updateContactInfo(newContactInfo);
+    toast.success("Numéro supprimé");
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch(role) {
+      case 'export': return <Globe size={16} className="text-blue-400"/>;
+      case 'wholesale': return <Users size={16} className="text-purple-400"/>;
+      case 'support': return <ShieldCheck size={16} className="text-red-400"/>;
+      default: return <MessageCircle size={16} className="text-green-400"/>;
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-8 border-b border-amber-900/30 pb-6 flex justify-between items-end">
@@ -50,26 +101,30 @@ const Settings: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-4 mb-8">
+      <div className="flex space-x-4 mb-8 overflow-x-auto pb-2">
         <button
           onClick={() => setActiveTab('contact')}
-          className={`px-6 py-3 text-sm uppercase tracking-widest transition-all ${
-            activeTab === 'contact' 
-            ? 'bg-amber-600 text-white font-bold' 
-            : 'bg-neutral-900 text-neutral-400 hover:text-amber-500'
+          className={`px-6 py-3 text-sm uppercase tracking-widest transition-all whitespace-nowrap ${
+            activeTab === 'contact' ? 'bg-amber-600 text-white font-bold' : 'bg-neutral-900 text-neutral-400 hover:text-amber-500'
           }`}
         >
-          Contact & Réseaux
+          Info Base
+        </button>
+        <button
+          onClick={() => setActiveTab('whatsapp')}
+          className={`px-6 py-3 text-sm uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${
+            activeTab === 'whatsapp' ? 'bg-green-700 text-white font-bold' : 'bg-neutral-900 text-green-500 hover:text-green-400'
+          }`}
+        >
+          <MessageCircle size={16} /> Équipe WhatsApp
         </button>
         <button
           onClick={() => setActiveTab('appearance')}
-          className={`px-6 py-3 text-sm uppercase tracking-widest transition-all ${
-            activeTab === 'appearance' 
-            ? 'bg-amber-600 text-white font-bold' 
-            : 'bg-neutral-900 text-neutral-400 hover:text-amber-500'
+          className={`px-6 py-3 text-sm uppercase tracking-widest transition-all whitespace-nowrap ${
+            activeTab === 'appearance' ? 'bg-amber-600 text-white font-bold' : 'bg-neutral-900 text-neutral-400 hover:text-amber-500'
           }`}
         >
-          Apparence & Accueil
+          Design Site
         </button>
       </div>
 
@@ -78,7 +133,7 @@ const Settings: React.FC = () => {
         <form onSubmit={handleContactSubmit} className="space-y-8 animate-fade-in">
           <div className="bg-black border border-amber-900/30 p-6 relative overflow-hidden">
             <h2 className="text-lg font-serif text-amber-100 mb-6 flex items-center gap-2">
-              <MapPin size={18} className="text-amber-500" /> Coordonnées
+              <MapPin size={18} className="text-amber-500" /> Coordonnées Générales
             </h2>
             
             <div className="grid md:grid-cols-2 gap-6 relative z-10">
@@ -89,13 +144,15 @@ const Settings: React.FC = () => {
                   className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" 
                 />
               </div>
+
               <div>
-                <label className="block text-amber-100 text-xs uppercase tracking-widest mb-2"><Phone size={12} className="inline mr-1"/> Téléphone</label>
+                <label className="block text-amber-100 text-xs uppercase tracking-widest mb-2"><Phone size={12} className="inline mr-1"/> Téléphone Principal</label>
                 <input 
                   type="text" name="phone" value={contactData.phone} onChange={handleContactChange}
                   className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" 
                 />
               </div>
+
               <div>
                 <label className="block text-amber-100 text-xs uppercase tracking-widest mb-2"><Mail size={12} className="inline mr-1"/> Email</label>
                 <input 
@@ -103,7 +160,7 @@ const Settings: React.FC = () => {
                   className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" 
                 />
               </div>
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-amber-100 text-xs uppercase tracking-widest mb-2"><Clock size={12} className="inline mr-1"/> Horaires</label>
                 <input 
                   type="text" name="hours" value={contactData.hours} onChange={handleContactChange}
@@ -120,24 +177,15 @@ const Settings: React.FC = () => {
             <div className="grid md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-amber-100 text-xs uppercase tracking-widest mb-2">Instagram</label>
-                <input 
-                  type="text" name="instagram" value={contactData.instagram || ''} onChange={handleContactChange}
-                  className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" 
-                />
+                <input type="text" name="instagram" value={contactData.instagram || ''} onChange={handleContactChange} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" />
               </div>
               <div>
                 <label className="block text-amber-100 text-xs uppercase tracking-widest mb-2">Facebook</label>
-                <input 
-                  type="text" name="facebook" value={contactData.facebook || ''} onChange={handleContactChange}
-                  className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" 
-                />
+                <input type="text" name="facebook" value={contactData.facebook || ''} onChange={handleContactChange} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" />
               </div>
               <div>
                 <label className="block text-amber-100 text-xs uppercase tracking-widest mb-2">Twitter</label>
-                <input 
-                  type="text" name="twitter" value={contactData.twitter || ''} onChange={handleContactChange}
-                  className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" 
-                />
+                <input type="text" name="twitter" value={contactData.twitter || ''} onChange={handleContactChange} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" />
               </div>
             </div>
           </div>
@@ -148,10 +196,104 @@ const Settings: React.FC = () => {
         </form>
       )}
 
+      {/* WHATSAPP TEAM TAB */}
+      {activeTab === 'whatsapp' && (
+        <div className="animate-fade-in space-y-6">
+          <div className="bg-green-950/20 border border-green-900/50 p-6">
+             <div className="flex justify-between items-start mb-6">
+               <div>
+                 <h2 className="text-xl font-serif text-green-400 mb-2">Segmentation WhatsApp</h2>
+                 <p className="text-neutral-400 text-sm">Gérez les numéros qui recevront les commandes selon le type de client.</p>
+               </div>
+               <Button onClick={handleAddAgent} variant="outline" className="border-green-600 text-green-400 hover:bg-green-900/30">
+                 <Plus size={18} /> Ajouter un numéro
+               </Button>
+             </div>
+
+             <div className="space-y-3">
+               {contactData.whatsAppAgents.map(agent => (
+                 <div key={agent.id} className="bg-black/50 border border-neutral-800 p-4 flex items-center justify-between group hover:border-green-800 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-700">
+                        {getRoleIcon(agent.role)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                           <span className="font-bold text-white">{agent.name}</span>
+                           <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-neutral-800 text-neutral-400 rounded-sm">
+                             {agent.role === 'general' ? 'Mali (Défaut)' : agent.role === 'export' ? 'International' : agent.role === 'wholesale' ? 'Grossistes' : 'Support'}
+                           </span>
+                        </div>
+                        <p className="text-green-500 font-mono text-sm">{agent.phone}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setEditingAgent(agent)} className="p-2 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded"><Edit2 size={16} /></button>
+                      <button onClick={() => deleteAgent(agent.id)} className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-900/20 rounded"><Trash2 size={16} /></button>
+                    </div>
+                 </div>
+               ))}
+               
+               {contactData.whatsAppAgents.length === 0 && (
+                 <div className="text-center py-8 text-neutral-500 italic">Aucun numéro configuré. Ajoutez-en un pour activer les commandes WhatsApp.</div>
+               )}
+             </div>
+          </div>
+
+          {/* Modal Edition Agent */}
+          {editingAgent && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+              <div className="bg-neutral-900 w-full max-w-md border border-green-900/50 p-6 shadow-2xl">
+                <h3 className="text-xl font-serif text-green-400 mb-6">Configuration Numéro</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-neutral-400 text-xs uppercase mb-2">Nom du service (ex: Service Client)</label>
+                    <input 
+                      type="text" 
+                      value={editingAgent.name || ''}
+                      onChange={e => setEditingAgent({...editingAgent, name: e.target.value})}
+                      className="w-full bg-black border border-neutral-700 p-3 text-white focus:border-green-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-400 text-xs uppercase mb-2">Numéro WhatsApp (+223...)</label>
+                    <input 
+                      type="text" 
+                      value={editingAgent.phone || ''}
+                      onChange={e => setEditingAgent({...editingAgent, phone: e.target.value})}
+                      className="w-full bg-black border border-neutral-700 p-3 text-white focus:border-green-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-neutral-400 text-xs uppercase mb-2">Rôle (Segmentation)</label>
+                    <select 
+                      value={editingAgent.role || 'general'}
+                      onChange={e => setEditingAgent({...editingAgent, role: e.target.value as any})}
+                      className="w-full bg-black border border-neutral-700 p-3 text-white focus:border-green-500 outline-none"
+                    >
+                      <option value="general">Général (Commandes Mali standard)</option>
+                      <option value="export">Export (International & Régions)</option>
+                      <option value="wholesale">Grossistes (Revendeurs)</option>
+                      <option value="support">SAV / Réclamations</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex gap-3 pt-4">
+                    <Button onClick={() => setEditingAgent(null)} variant="ghost" fullWidth>Annuler</Button>
+                    <Button onClick={saveAgent} fullWidth className="bg-green-600 hover:bg-green-500 text-white">Enregistrer</Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* APPEARANCE TAB */}
       {activeTab === 'appearance' && (
         <form onSubmit={handleAppearanceSubmit} className="space-y-8 animate-fade-in">
-          <div className="bg-black border border-amber-900/30 p-6">
+          {/* ... (Code apparence existant conservé) ... */}
+           <div className="bg-black border border-amber-900/30 p-6">
             <h2 className="text-lg font-serif text-amber-100 mb-6 flex items-center gap-2">
               <Layout size={18} className="text-amber-500" /> Page d'Accueil (Hero Section)
             </h2>
@@ -163,7 +305,6 @@ const Settings: React.FC = () => {
                   type="text" name="heroTitle" value={appearanceData.heroTitle} onChange={handleAppearanceChange}
                   className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none font-serif text-lg" 
                 />
-                <p className="text-xs text-neutral-500 mt-1">Le gros titre au centre de la page.</p>
               </div>
 
               <div>

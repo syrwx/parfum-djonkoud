@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Product, Order, OrderStatus, ContactInfo, SiteSettings } from '../types';
+import { Product, Order, OrderStatus, ContactInfo, SiteSettings, WhatsAppAgent } from '../types';
 import { PRODUCTS, MOCK_ORDERS, SLOGANS } from '../constants';
 
 interface StoreContextType {
@@ -31,22 +31,39 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
   
   // =================================================================
-  // ⚠️ CONFIGURATION CRITIQUE - WHATSAPP ⚠️
-  // C'est ici que vous définissez le numéro qui recevra les commandes.
+  // ⚠️ CONFIGURATION CRITIQUE - EQUIPE WHATSAPP ⚠️
   // =================================================================
   const [contactInfo, setContactInfo] = useState<ContactInfo>({
     address: "ACI 2000, Rue 450, Bamako, Mali",
-    
-    // 👇 REMPLACEZ LE NUMÉRO CI-DESSOUS PAR LE VÔTRE 👇
-    // Format : +223 suivi de votre numéro (ex: +223 76 00 00 00)
-    // C'est ce numéro qui s'ouvrira quand le client clique sur "Commander sur WhatsApp"
-    phone: "+223 70 00 00 00", 
-    
+    phone: "+223 70 00 00 00",
     email: "contact@djonkoud.ml",
     hours: "Lun - Sam : 09h00 - 19h00",
     instagram: "djonkoud_parfum",
     facebook: "DjonkoudOfficial",
-    twitter: "@djonkoud"
+    twitter: "@djonkoud",
+    whatsAppAgents: [
+      {
+        id: '1',
+        name: 'Service Client Bamako',
+        phone: '+223 70 00 00 00',
+        role: 'general',
+        active: true
+      },
+      {
+        id: '2',
+        name: 'Service Export / Régions',
+        phone: '+223 70 00 00 01',
+        role: 'export',
+        active: true
+      },
+      {
+        id: '3',
+        name: 'Grossistes & Revendeurs',
+        phone: '+223 70 00 00 02',
+        role: 'wholesale',
+        active: true
+      }
+    ]
   });
 
   // Données d'apparence par défaut
