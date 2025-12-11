@@ -50,10 +50,10 @@ const Navbar: React.FC = () => {
 
           {/* Icons */}
           <div className="flex items-center space-x-4 md:space-x-6">
-            <button className="text-amber-100 hover:text-amber-400 transition-colors hidden sm:block">
+            <Link to="/shop" className="text-amber-100 hover:text-amber-400 transition-colors hidden sm:block" title="Rechercher un produit">
               <Search size={20} />
-            </button>
-            <Link to="/login" className="text-amber-100 hover:text-amber-400 transition-colors hidden sm:block">
+            </Link>
+            <Link to="/admin/login" className="text-amber-100 hover:text-amber-400 transition-colors hidden sm:block" title="Espace Client / Admin">
               <User size={20} />
             </Link>
             <Link to="/cart" className="relative text-amber-100 hover:text-amber-400 transition-colors">
@@ -74,7 +74,8 @@ const Navbar: React.FC = () => {
           <Link to="/" className="block px-3 py-3 text-amber-100 hover:text-amber-400 uppercase tracking-widest border-b border-neutral-800">Accueil</Link>
           <Link to="/shop" className="block px-3 py-3 text-amber-100 hover:text-amber-400 uppercase tracking-widest border-b border-neutral-800">Collection</Link>
           <Link to="/guide" className="block px-3 py-3 text-amber-100 hover:text-amber-400 uppercase tracking-widest border-b border-neutral-800">Guide IA</Link>
-          <Link to="/about" className="block px-3 py-3 text-amber-100 hover:text-amber-400 uppercase tracking-widest">La Maison</Link>
+          <Link to="/about" className="block px-3 py-3 text-amber-100 hover:text-amber-400 uppercase tracking-widest border-b border-neutral-800">La Maison</Link>
+          <Link to="/admin/login" className="block px-3 py-3 text-amber-100 hover:text-amber-400 uppercase tracking-widest">Connexion Admin</Link>
         </div>
       </div>
     </nav>

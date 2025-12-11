@@ -30,10 +30,18 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [products, setProducts] = useState<Product[]>(PRODUCTS);
   const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
   
-  // Données de contact par défaut
+  // =================================================================
+  // ⚠️ CONFIGURATION CRITIQUE - WHATSAPP ⚠️
+  // C'est ici que vous définissez le numéro qui recevra les commandes.
+  // =================================================================
   const [contactInfo, setContactInfo] = useState<ContactInfo>({
     address: "ACI 2000, Rue 450, Bamako, Mali",
-    phone: "+223 70 00 00 00",
+    
+    // 👇 REMPLACEZ LE NUMÉRO CI-DESSOUS PAR LE VÔTRE 👇
+    // Format : +223 suivi de votre numéro (ex: +223 76 00 00 00)
+    // C'est ce numéro qui s'ouvrira quand le client clique sur "Commander sur WhatsApp"
+    phone: "+223 70 00 00 00", 
+    
     email: "contact@djonkoud.ml",
     hours: "Lun - Sam : 09h00 - 19h00",
     instagram: "djonkoud_parfum",

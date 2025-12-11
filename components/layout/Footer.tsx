@@ -41,10 +41,10 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="text-amber-100 font-bold uppercase tracking-widest mb-6 text-sm">Légal</h4>
             <ul className="space-y-3 text-sm text-neutral-400">
-              <li><a href="#" className="hover:text-amber-500 transition-colors">Conditions Générales</a></li>
-              <li><a href="#" className="hover:text-amber-500 transition-colors">Politique de Confidentialité</a></li>
-              <li><a href="#" className="hover:text-amber-500 transition-colors">Livraison & Retours</a></li>
-              <li><a href="#" className="hover:text-amber-500 transition-colors">FAQ</a></li>
+              <li><Link to="/legal" className="hover:text-amber-500 transition-colors">Conditions Générales</Link></li>
+              <li><Link to="/legal" className="hover:text-amber-500 transition-colors">Politique de Confidentialité</Link></li>
+              <li><Link to="/legal" className="hover:text-amber-500 transition-colors">Livraison & Retours</Link></li>
+              <li><Link to="/legal" className="hover:text-amber-500 transition-colors">FAQ</Link></li>
             </ul>
           </div>
 
