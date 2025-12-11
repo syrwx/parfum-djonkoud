@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { Product } from '../../types';
 import Button from '../../components/ui/Button';
-import { Edit2, Trash2, Plus, X, Upload } from 'lucide-react';
+import { Edit2, Trash2, Plus, X, Upload, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ProductsManager: React.FC = () => {
   const { products, addProduct, updateProduct, deleteProduct } = useStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const openModal = (product?: Product) => {
     if (product) {
@@ -45,6 +46,28 @@ const ProductsManager: React.FC = () => {
       toast.success('Nouveau produit créé');
     }
     closeModal();
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Vérification simple
+      if (file.size > 2000000) { // 2MB
+        toast.error("L'image est trop lourde (> 2MB)");
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditingProduct(prev => ({ ...prev, image: reader.result as string }));
+        toast.success("Image chargée avec succès");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
   return (
@@ -149,17 +172,46 @@ const ProductsManager: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-amber-100 text-xs uppercase mb-2">URL Image</label>
-                <div className="flex gap-2">
-                   <input 
-                    type="text" 
-                    value={editingProduct.image || ''} 
-                    onChange={e => setEditingProduct({...editingProduct, image: e.target.value})}
-                    className="w-full bg-black border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" 
-                  />
-                  <div className="w-12 h-12 bg-neutral-800 flex-shrink-0">
-                    {editingProduct.image && <img src={editingProduct.image} className="w-full h-full object-cover" />}
+                <label className="block text-amber-100 text-xs uppercase mb-2">Image du Produit</label>
+                <div className="flex flex-col gap-4">
+                  <div className="flex gap-2 items-start">
+                     {/* Preview Box */}
+                     <div className="w-24 h-24 bg-neutral-800 border border-neutral-700 flex-shrink-0 relative group">
+                        {editingProduct.image ? (
+                          <img src={editingProduct.image} className="w-full h-full object-cover" alt="Preview" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-neutral-600"><ImageIcon /></div>
+                        )}
+                     </div>
+                     
+                     <div className="flex-1 space-y-2">
+                        {/* URL Input (Fallback) */}
+                        <input 
+                          type="text" 
+                          placeholder="Ou coller une URL..."
+                          value={editingProduct.image || ''} 
+                          onChange={e => setEditingProduct({...editingProduct, image: e.target.value})}
+                          className="w-full bg-black border border-neutral-700 p-3 text-sm text-white focus:border-amber-500 outline-none" 
+                        />
+                        
+                        {/* File Upload Button */}
+                        <input 
+                          type="file" 
+                          ref={fileInputRef} 
+                          onChange={handleFileUpload} 
+                          className="hidden" 
+                          accept="image/*"
+                        />
+                        <button 
+                          type="button" 
+                          onClick={triggerFileInput}
+                          className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white text-sm border border-neutral-600 transition-colors"
+                        >
+                          <Upload size={14} /> Télécharger une photo
+                        </button>
+                     </div>
                   </div>
+                  <p className="text-[10px] text-neutral-500">Formats supportés: JPG, PNG, WebP.</p>
                 </div>
               </div>
 

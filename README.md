@@ -1,10 +1,10 @@
 # DJONKOUD PARFUM - Guide Technique Complet
 
-Ce document contient toutes les instructions pour déployer, mettre à jour et gérer la plateforme Djonkoud sur AWS EC2.
+Ce document est votre bible pour déployer, mettre à jour et interconnecter le système.
 
 ---
 
-## 🚀 1. Déploiement Initial (AWS CloudFormation)
+## 🚀 Partie 1 : Déploiement Initial (AWS)
 
 1.  Allez sur la **Console AWS** > **CloudFormation**.
 2.  Créez une stack en uploadant le fichier `aws-cloudformation.yaml`.
@@ -13,111 +13,153 @@ Ce document contient toutes les instructions pour déployer, mettre à jour et g
 
 ---
 
-## 🔑 2. ÉTAPE CRUCIALE : Lier le Serveur à GitHub (À faire 1 seule fois)
+## 💻 Partie 2 : Installation & Connexion Backend
 
-Pour que la commande `update-app` fonctionne, votre serveur EC2 doit avoir le droit de télécharger votre code privé depuis GitHub. Voici comment faire :
+C'est ici que l'on connecte le "Cerveau" (Backend) au "Visage" (Frontend).
 
-### Étape A : Générer une "Clé" sur le Serveur
-1.  Ouvrez le terminal de votre ordinateur (PowerShell ou Terminal).
-2.  Connectez-vous à votre serveur AWS :
-    ```bash
-    ssh -i "votre-cle.pem" ubuntu@IP_DU_SERVEUR
-    ```
-3.  Une fois connecté (vous verrez `ubuntu@ip...`), tapez cette commande pour créer une clé d'identité pour le serveur :
-    ```bash
-    ssh-keygen -t ed25519 -C "server@djonkoud"
-    ```
-    *(Appuyez sur Entrée 3 fois pour tout laisser par défaut, ne mettez pas de mot de passe).*
+### Comment ça marche ?
+1.  **Frontend (React)** : Tourne dans le navigateur du client.
+2.  **Nginx (Le Gardien)** : Reçoit les requêtes. Si c'est pour voir le site, il sert les fichiers React. Si c'est pour l'API (ex: `/api/orders`), il passe le relais au Backend.
+3.  **Backend (Node.js)** : Tourne sur le port 3000 du serveur.
+4.  **MongoDB** : Stocke les données sur le port 27017 (accessible uniquement par le Backend).
 
-4.  Affichez la clé publique :
-    ```bash
-    cat /home/ubuntu/.ssh/id_ed25519.pub
-    ```
-5.  **Copiez** tout le texte qui s'affiche (ça commence par `ssh-ed25519...`).
+### Étape A : Créer le fichier Serveur
+Sur votre ordinateur, créez un fichier nommé `server.js` à la racine de votre projet avec ce contenu de démarrage :
 
-### Étape B : Donner la clé à GitHub
-1.  Allez sur votre projet **GitHub** dans votre navigateur.
-2.  Cliquez sur **Settings** (Paramètres du projet) > **Deploy Keys** (dans le menu à gauche).
-3.  Cliquez sur **Add deploy key**.
-4.  **Title** : "Serveur AWS EC2".
-5.  **Key** : Collez le texte que vous avez copié à l'étape A.
-6.  Cliquez sur **Add key**.
+```javascript
+// server.js
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const app = express();
 
-### Étape C : Installer le site pour la première fois
-Retournez sur votre terminal (toujours connecté au serveur EC2) et tapez ceci :
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-```bash
-# 1. On supprime le dossier vide créé par défaut
-sudo rm -rf /var/www/djonkoud
+// Connexion MongoDB
+mongoose.connect('mongodb://127.0.0.1:27017/djonkoud')
+  .then(() => console.log('✅ MongoDB Connecté'))
+  .catch(err => console.error('❌ Erreur MongoDB:', err));
 
-# 2. On télécharge le code (Remplacez URL_GITHUB par le lien SSH de votre repo !)
-# Le lien ressemble à : git@github.com:VOTRE_NOM/djonkoud.git
-git clone git@github.com:VOTRE_NOM/djonkoud.git /var/www/djonkoud
+// Schéma Commande
+const OrderSchema = new mongoose.Schema({
+    customerName: String,
+    total: Number,
+    items: Array,
+    date: { type: Date, default: Date.now }
+});
+const Order = mongoose.model('Order', OrderSchema);
 
-# 3. On installe tout
-cd /var/www/djonkoud
-npm install
-npm run build
-sudo systemctl restart nginx
+// Routes API
+app.get('/api/status', (req, res) => {
+    res.json({ status: 'Online', message: 'Bienvenue sur API Djonkoud' });
+});
+
+app.post('/api/orders', async (req, res) => {
+    try {
+        const newOrder = new Order(req.body);
+        await newOrder.save();
+        res.json({ success: true, order: newOrder });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Démarrage
+app.listen(3000, () => {
+    console.log('🚀 Serveur Backend démarré sur le port 3000');
+});
 ```
 
----
+Ajoutez aussi ces lignes dans votre `package.json` sous "scripts" :
+```json
+"start:server": "node server.js"
+```
 
-## 🔄 3. Mises à jour Quotidiennes (Automatique)
+### Étape B : Lancer le Backend sur EC2
+Une fois que vous avez envoyé ce fichier sur GitHub et fait un `update-app` sur le serveur :
 
-Une fois l'étape 2 terminée, la vie est belle.
-
-Quand vous avez fait des modifications sur votre ordinateur et que vous avez fait un "Push" sur GitHub :
-
-1.  Connectez-vous au serveur : `ssh -i ... ubuntu@IP`
-2.  Lancez simplement la commande magique :
+1.  Connectez-vous en SSH :
     ```bash
-    sudo update-app
+    ssh -i "cle.pem" ubuntu@IP
+    ```
+2.  Allez dans le dossier :
+    ```bash
+    cd /var/www/djonkoud
+    ```
+3.  Installez les outils backend :
+    ```bash
+    npm install express mongoose cors
+    ```
+4.  Lancez le serveur avec PM2 (pour qu'il ne s'arrête jamais) :
+    ```bash
+    pm2 start server.js --name "djonkoud-api"
+    pm2 save
+    pm2 startup
     ```
 
-**C'est tout !** Le script va :
-*   Parler à GitHub.
-*   Télécharger les nouveautés.
-*   Reconstruire le site.
-*   Redémarrer le serveur.
+*Félicitations ! Votre API est vivante.* Vous pouvez tester en allant sur `http://VOTRE_IP/api/status`.
 
 ---
 
-## 📱 4. Gestion des Réseaux Sociaux & Liens
+## 🔑 Partie 3 : Lier le Serveur à GitHub (Clés de Déploiement)
 
-Vous avez deux façons de modifier les liens Facebook, Instagram, etc.
+Pour que la commande `update-app` fonctionne, votre serveur EC2 doit avoir le droit de télécharger votre code privé depuis GitHub.
 
-### Méthode 1 : Via l'Espace Admin (Recommandé)
-C'est la méthode "No-Code".
-1.  Connectez-vous sur `http://VOTRE_IP/admin/login`
-2.  Allez dans **Paramètres** > Onglet **Contact & Réseaux**.
-3.  Modifiez les champs "Instagram", "Facebook", "Twitter".
-4.  Cliquez sur **Sauvegarder**.
+1.  **Sur le serveur (SSH)**, générez la clé :
+    ```bash
+    ssh-keygen -t ed25519 -C "server@djonkoud"
+    # (Entrée 3 fois)
+    cat /home/ubuntu/.ssh/id_ed25519.pub
+    ```
+    *Copiez le texte affiché.*
 
-### Méthode 2 : Via le Code (Pour changer les valeurs par défaut)
-Si vous voulez changer les valeurs qui sont là au démarrage :
-1.  Ouvrez le fichier `src/context/StoreContext.tsx` sur votre ordinateur.
-2.  Cherchez les lignes 38 à 45.
-3.  Remplacez `djonkoud_parfum` par votre vrai pseudo.
+2.  **Sur GitHub** :
+    *   Allez dans **Settings** > **Deploy Keys** > **Add deploy key**.
+    *   Collez la clé et validez.
 
----
-
-## 📍 5. Intégration Google Maps
-
-Pour afficher la vraie carte de votre boutique :
-
-1.  Allez sur [Google Maps](https://www.google.com/maps).
-2.  Cherchez votre adresse exacte à Bamako.
-3.  Cliquez sur **Partager** > **Intégrer une carte**.
-4.  Copiez le lien `https://...` qui est à l'intérieur de `src="..."`.
-5.  Ouvrez le fichier `src/pages/Contact.tsx`.
-6.  Allez à la **Ligne 170** (environ).
-7.  Remplacez l'URL existante par la vôtre.
+3.  **Sur le serveur**, première installation :
+    ```bash
+    sudo rm -rf /var/www/djonkoud
+    # REMPLACEZ PAR VOTRE LIEN GITHUB SSH :
+    git clone git@github.com:VOTRE_USER/djonkoud.git /var/www/djonkoud
+    cd /var/www/djonkoud
+    npm install
+    npm run build
+    ```
 
 ---
 
-## 🛠 Commandes Utiles (Mémo)
+## 🔄 Partie 4 : Mises à jour (La méthode facile)
 
-*   **Voir les logs du backend** : `pm2 logs`
-*   **Redémarrer le site** : `sudo systemctl restart nginx`
-*   **Mettre à jour le code** : `sudo update-app`
+Quand vous modifiez le code (Frontend ou Backend) sur votre ordi et l'envoyez sur GitHub :
+
+1.  Connectez-vous au serveur.
+2.  Tapez : `sudo update-app`
+
+Le script va tout faire : télécharger le code, reconstruire le site React, et redémarrer le serveur API Node.js.
+
+---
+
+## 📱 Partie 5 : Fonctionnalités Maliennes
+
+### Checkout WhatsApp
+J'ai intégré un bouton spécial dans le panier.
+*   **Fonctionnement :** Il prend le contenu du panier et le formate en un message texte clair.
+*   **Configuration :** Il utilise le numéro de téléphone défini dans l'Admin ou `StoreContext`. Assurez-vous que ce numéro a un compte WhatsApp actif.
+
+### Google Maps
+Pour changer la carte dans la page Contact :
+1.  Allez sur Google Maps, trouvez votre boutique.
+2.  Cliquez "Partager" > "Intégrer".
+3.  Copiez le lien `https://...`
+4.  Collez-le dans `src/pages/Contact.tsx` à la place de l'URL existante.
+
+---
+
+## 🛠 Mémo des Commandes
+
+*   `pm2 status` : Voir si le backend tourne.
+*   `pm2 logs` : Voir les erreurs du backend.
+*   `sudo update-app` : Tout mettre à jour.

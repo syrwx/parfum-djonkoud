@@ -17,6 +17,7 @@ import ProductsManager from './pages/admin/Products';
 import OrdersManager from './pages/admin/Orders';
 import InventoryManager from './pages/admin/Inventory';
 import Settings from './pages/admin/Settings';
+import FloatingWhatsApp from './components/FloatingWhatsApp';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import { StoreProvider } from './context/StoreContext';
@@ -30,7 +31,7 @@ const ScrollToTop = () => {
   return null;
 };
 
-// Wrapper for public pages to include Navbar/Footer
+// Wrapper for public pages to include Navbar/Footer/WhatsApp
 const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="flex flex-col min-h-screen bg-neutral-950 text-amber-50 overflow-x-hidden selection:bg-amber-900 selection:text-white">
     <Navbar />
@@ -38,6 +39,7 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       {children}
     </main>
     <Footer />
+    <FloatingWhatsApp />
   </div>
 );
 

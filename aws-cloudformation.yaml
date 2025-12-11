@@ -99,7 +99,7 @@ Resources:
                   try_files \$uri \$uri/ /index.html;
               }
 
-              # Configuration Proxy vers le Backend (Futur API Node.js sur le port 3000)
+              # Configuration Proxy vers le Backend (API Node.js sur le port 3000)
               location /api {
                   proxy_pass http://localhost:3000;
                   proxy_http_version 1.1;
@@ -122,9 +122,11 @@ Resources:
           git pull origin main
           echo "📦 Installation des dépendances..."
           npm install
-          echo "🏗 Construction de l'application..."
+          echo "🏗 Construction de l'application React..."
           npm run build
-          echo "🚀 Redémarrage du serveur..."
+          echo "🔙 Redémarrage du Backend (si présent)..."
+          pm2 restart all || echo "Pas de processus PM2 actif"
+          echo "🚀 Redémarrage du serveur Web..."
           systemctl restart nginx
           echo "✅ Mise à jour terminée avec succès !"
           EOF
