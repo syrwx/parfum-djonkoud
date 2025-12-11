@@ -1,0 +1,148 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'DJONKOUD PARFUM - Full Stack Server (EC2 + MongoDB + Nginx + Node.js)'
+
+Parameters:
+  KeyName:
+    Description: Nom de la KeyPair EC2 existante pour l'accès SSH
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Doit être le nom d'une KeyPair existante.
+  
+  InstanceType:
+    Description: Type d'instance EC2 (t2.micro est gratuit dans l'offre Free Tier)
+    Type: String
+    Default: t2.micro
+    AllowedValues: [t2.micro, t2.small, t3.micro, t3.medium]
+    ConstraintDescription: Doit être un type d'instance valide.
+
+  SSHLocation:
+    Description: Plage IP autorisée pour le SSH (Mettez 0.0.0.0/0 pour autoriser tout le monde, ou votre IP)
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: Doit être une plage CIDR valide (ex: 0.0.0.0/0).
+
+Resources:
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group pour Web et SSH
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref SSHLocation
+        # Autoriser MongoDB seulement en local (sécurité)
+        - IpProtocol: tcp
+          FromPort: '27017'
+          ToPort: '27017'
+          CidrIp: 127.0.0.1/32
+
+  WebServerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      SecurityGroups: [!Ref WebServerSecurityGroup]
+      KeyName: !Ref KeyName
+      # AMI Ubuntu 22.04 LTS (us-east-1). CHANGEZ CET ID SI VOUS ÊTES À PARIS (eu-west-3 : ami-05b5a865c3579bbc4)
+      ImageId: ami-0c7217cdde317cfec 
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          
+          # 1. Mises à jour système
+          apt-get update -y
+          apt-get upgrade -y
+          
+          # 2. Installation de Node.js 18
+          curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+          apt-get install -y nodejs
+          
+          # 3. Installation de Nginx, Git et outils
+          apt-get install -y nginx git build-essential
+          
+          # 4. Installation de MongoDB Community (Base de données Gratuite)
+          curl -fsSL https://pgp.mongodb.com/server-7.0.asc | \
+             gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg \
+             --dearmor
+          echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          apt-get update
+          apt-get install -y mongodb-org
+          
+          # Démarrage de MongoDB
+          systemctl start mongod
+          systemctl enable mongod
+          
+          # 5. Installation de PM2 (Gestionnaire de processus pour Node.js)
+          npm install -g pm2
+          
+          # 6. Configuration de Nginx pour React (Single Page App)
+          cat > /etc/nginx/sites-available/default <<EOF
+          server {
+              listen 80;
+              server_name _;
+              
+              root /var/www/djonkoud/dist;
+              index index.html;
+
+              # Configuration Frontend React
+              location / {
+                  try_files \$uri \$uri/ /index.html;
+              }
+
+              # Configuration Proxy vers le Backend (Futur API Node.js sur le port 3000)
+              location /api {
+                  proxy_pass http://localhost:3000;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade \$http_upgrade;
+                  proxy_set_header Connection 'upgrade';
+                  proxy_set_header Host \$host;
+                  proxy_cache_bypass \$http_upgrade;
+              }
+          }
+          EOF
+          
+          # 7. Création du dossier de l'application
+          mkdir -p /var/www/djonkoud
+          
+          # 8. Création d'un script de mise à jour automatique
+          cat > /usr/local/bin/update-app <<EOF
+          #!/bin/bash
+          cd /var/www/djonkoud
+          echo "🔄 Récupération du code depuis GitHub..."
+          git pull origin main
+          echo "📦 Installation des dépendances..."
+          npm install
+          echo "🏗 Construction de l'application..."
+          npm run build
+          echo "🚀 Redémarrage du serveur..."
+          systemctl restart nginx
+          echo "✅ Mise à jour terminée avec succès !"
+          EOF
+          chmod +x /usr/local/bin/update-app
+          
+          # Application des droits
+          chown -R ubuntu:ubuntu /var/www/djonkoud
+          
+          # Redémarrage de Nginx pour appliquer la config
+          systemctl restart nginx
+          
+          # Log de fin
+          echo "INSTALLATION TERMINEE" > /var/www/djonkoud/install_log.txt
+
+Outputs:
+  WebsiteURL:
+    Description: URL de votre site (HTTP)
+    Value: !Join ['', ['http://', !GetAtt [WebServerInstance, PublicDnsName]]]
+  PublicIP:
+    Description: Adresse IP Publique (à utiliser pour SSH et DNS)
+    Value: !GetAtt [WebServerInstance, PublicIp]
