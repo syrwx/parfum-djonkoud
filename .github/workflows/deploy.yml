@@ -1,0 +1,43 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          port: 22
+          script: |
+            # Se déplacer dans le dossier de l'application
+            cd /var/www/djonkoud
+            
+            # Réinitialiser les permissions au cas où
+            sudo chown -R ubuntu:ubuntu .
+            
+            # Récupérer le dernier code depuis GitHub
+            git reset --hard origin/main
+            git pull origin main
+            
+            # Installer TOUTES les dépendances (même les outils de build comme Vite)
+            # --production=false est crucial ici
+            npm install --legacy-peer-deps --production=false
+            
+            # RECONSTRUIRE LE FRONTEND
+            npm run build
+            
+            # Redémarrer le serveur Backend via PM2
+            pm2 restart djonkoud-api || pm2 start server.js --name "djonkoud-api"
+            pm2 save

@@ -1,0 +1,180 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "DJONKOUD PARFUM - Full Stack Auto-Deployment (EC2 + MongoDB + Nginx + Node.js)"
+
+Parameters:
+  GitHubRepoUrl:
+    Description: "L'URL HTTPS de votre dépôt GitHub"
+    Type: String
+    Default: https://github.com/syrwx/parfum-djonkoud.git
+
+  KeyName:
+    Description: "Nom de votre paire de clés EC2 (LAISSEZ VIDE si vous n'en avez pas)"
+    Type: String
+    Default: ""
+
+  GoogleApiKey:
+    Description: "Votre Clé API Google Gemini"
+    Type: String
+    Default: AIzaSyCCvmXCSiyQub7R8sjFVNxD4j50DOmGGn8
+    NoEcho: true
+
+  InstanceType:
+    Description: "Type d'instance (t3.micro est recommandé)"
+    Type: String
+    Default: t3.micro
+    AllowedValues: [t2.micro, t3.micro, t2.small, t3.small, t3.medium]
+
+  LatestAmiId:
+    Description: "Récupération automatique de la dernière version d'Ubuntu 22.04 LTS"
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id'
+
+  SSHLocation:
+    Description: "Qui peut se connecter en SSH ? (0.0.0.0/0 = Tout le monde)"
+    Type: String
+    Default: 0.0.0.0/0
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+
+Conditions:
+  HasKey: !Not [!Equals [!Ref KeyName, ""]]
+
+Resources:
+  # Groupe de sécurité (Pare-feu)
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security Group pour Web (HTTP/HTTPS) et SSH"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHLocation
+
+  # Serveur EC2
+  WebServerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      SecurityGroups: [!Ref WebServerSecurityGroup]
+      KeyName: !If [HasKey, !Ref KeyName, !Ref "AWS::NoValue"]
+      ImageId: !Ref LatestAmiId
+      
+      # Le script d'installation
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          
+          # 0. SWAP (Mémoire virtuelle anti-crash)
+          echo "💾 Création du fichier Swap..."
+          fallocate -l 2G /swapfile
+          chmod 600 /swapfile
+          mkswap /swapfile
+          swapon /swapfile
+          echo '/swapfile none swap sw 0 0' | tee -a /etc/fstab
+
+          # 1. INSTALLATION SYSTÈME
+          echo "🚀 Démarrage de l'installation..."
+          apt-get update -y
+          apt-get install -y git nginx build-essential curl
+
+          # Node.js 18
+          curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+          apt-get install -y nodejs
+
+          # MongoDB 7.0
+          curl -fsSL https://pgp.mongodb.com/server-7.0.asc | \
+             gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg \
+             --dearmor
+          echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          apt-get update
+          apt-get install -y mongodb-org
+          
+          systemctl start mongod
+          systemctl enable mongod
+
+          # PM2
+          npm install -g pm2
+
+          # 2. INSTALLATION APP
+          mkdir -p /var/www/djonkoud
+          chown -R ubuntu:ubuntu /var/www/djonkoud
+          cd /var/www/djonkoud
+
+          echo "📥 Téléchargement du code depuis GitHub..."
+          sudo -u ubuntu git clone ${GitHubRepoUrl} .
+
+          # === SECURITÉ ANTI-502 : Vérifier si server.js existe ===
+          if [ ! -f server.js ]; then
+            echo "⚠️ server.js introuvable ! Création d'un serveur de secours..."
+            cat > server.js <<EOF
+            const http = require('http');
+            const server = http.createServer((req, res) => {
+              res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+              res.end('<div style="font-family:sans-serif;text-align:center;padding:50px;"><h1>🚧 Site en maintenance (Erreur 502 évitée)</h1><p>Le serveur fonctionne, mais le fichier <b>server.js</b> est absent.</p><p style="color:red;font-weight:bold;">👉 ACTION REQUISE : Faites votre "git push" sur GitHub pour envoyer votre code.</p></div>');
+            });
+            server.listen(3000, () => console.log('Serveur de secours démarré'));
+            EOF
+            chown ubuntu:ubuntu server.js
+          fi
+
+          echo "📦 Installation des paquets NPM..."
+          # FIX CRITIQUE : Réduction mémoire pour éviter le crash sur t3.micro
+          export NODE_OPTIONS="--max-old-space-size=512"
+          sudo -u ubuntu npm install --legacy-peer-deps
+
+          echo "🔑 Configuration .env..."
+          cat > .env <<EOF
+          API_KEY=${GoogleApiKey}
+          MONGO_URI=mongodb://127.0.0.1:27017/djonkoud
+          NODE_ENV=production
+          PORT=3000
+          EOF
+          chown ubuntu:ubuntu .env
+
+          echo "🏗 Construction du site..."
+          # Si vite n'est pas trouvé, on ignore l'erreur pour ne pas casser le déploiement du serveur de secours
+          sudo -u ubuntu npm run build || echo "⚠️ Build échoué ou inutile pour le serveur de secours"
+
+          echo "🔥 Lancement du serveur..."
+          sudo -u ubuntu pm2 start server.js --name "djonkoud-api"
+          sudo -u ubuntu pm2 save
+          sudo -u ubuntu pm2 startup
+
+          # 3. NGINX
+          echo "🌐 Configuration de Nginx..."
+          cat > /etc/nginx/sites-available/default <<EOF
+          server {
+              listen 80;
+              server_name _;
+              
+              location / {
+                  proxy_pass http://localhost:3000;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade \$http_upgrade;
+                  proxy_set_header Connection 'upgrade';
+                  proxy_set_header Host \$host;
+                  proxy_cache_bypass \$http_upgrade;
+              }
+          }
+          EOF
+
+          nginx -t
+          systemctl restart nginx
+
+          echo "✅ INSTALLATION TERMINÉE AVEC SUCCÈS !"
+
+Outputs:
+  WebsiteURL:
+    Description: "👉 CLIQUEZ ICI : Voici le lien de votre site Djonkoud !"
+    Value: !Join ['', ['http://', !GetAtt [WebServerInstance, PublicDnsName]]]
+  ServerIP:
+    Description: "IP Publique du serveur"
+    Value: !GetAtt [WebServerInstance, PublicIp]
