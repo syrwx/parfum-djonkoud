@@ -4,7 +4,7 @@ import { useStore } from '../../context/StoreContext';
 import { useAuth } from '../../context/AuthContext';
 import { ContactInfo, SiteSettings, WhatsAppAgent } from '../../types';
 import Button from '../../components/ui/Button';
-import { Save, MapPin, Mail, Clock, Globe, Layout, Image as ImageIcon, MessageCircle, Plus, Trash2, Edit2, ShieldCheck, Users, Phone, Lock, Key } from 'lucide-react';
+import { Save, MapPin, Mail, Clock, Globe, Layout, Image as ImageIcon, MessageCircle, Plus, Trash2, Edit2, ShieldCheck, Users, Phone, Lock, Key, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Settings: React.FC = () => {
@@ -49,12 +49,19 @@ const Settings: React.FC = () => {
         return;
     }
     
+    if (securityData.password && securityData.password.length < 6) {
+        toast.error("Le mot de passe doit faire au moins 6 caractères");
+        return;
+    }
+    
+    const toastId = toast.loading("Mise à jour des accès...");
+    
     const success = await updateProfile(securityData.email, securityData.password || undefined);
     if (success) {
-        toast.success("Profil administrateur mis à jour");
+        toast.success("Profil administrateur et mot de passe mis à jour avec succès !", { id: toastId });
         setSecurityData(prev => ({ ...prev, password: '', confirmPassword: '' }));
     } else {
-        toast.error("Erreur lors de la mise à jour");
+        toast.error("Erreur lors de la mise à jour", { id: toastId });
     }
   };
 
@@ -130,7 +137,7 @@ const Settings: React.FC = () => {
         <button onClick={() => setActiveTab('contact')} className={`px-4 py-3 text-sm uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'contact' ? 'bg-amber-600 text-white font-bold' : 'bg-neutral-900 text-neutral-400 hover:text-amber-500'}`}>Info Base</button>
         <button onClick={() => setActiveTab('whatsapp')} className={`px-4 py-3 text-sm uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'whatsapp' ? 'bg-green-700 text-white font-bold' : 'bg-neutral-900 text-green-500 hover:text-green-400'}`}><MessageCircle size={16} /> Équipe WhatsApp</button>
         <button onClick={() => setActiveTab('appearance')} className={`px-4 py-3 text-sm uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'appearance' ? 'bg-amber-600 text-white font-bold' : 'bg-neutral-900 text-neutral-400 hover:text-amber-500'}`}>Design Site</button>
-        <button onClick={() => setActiveTab('security')} className={`px-4 py-3 text-sm uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'security' ? 'bg-red-900 text-white font-bold' : 'bg-neutral-900 text-red-400 hover:text-red-300'}`}><Lock size={16} /> Sécurité</button>
+        <button onClick={() => setActiveTab('security')} className={`px-4 py-3 text-sm uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'security' ? 'bg-red-900 text-white font-bold' : 'bg-neutral-900 text-red-400 hover:text-red-300'}`}><Lock size={16} /> Sécurité Admin</button>
       </div>
 
       {/* CONTACT TAB */}
@@ -244,10 +251,19 @@ const Settings: React.FC = () => {
          <form onSubmit={handleSecuritySubmit} className="space-y-8 animate-fade-in">
            <div className="bg-black border border-red-900/30 p-6 relative overflow-hidden">
              <div className="absolute inset-0 bg-red-900/5 pointer-events-none"></div>
-             <h2 className="text-lg font-serif text-red-400 mb-6 flex items-center gap-2">
-                <Lock size={18} /> Sécurité Administrateur
-             </h2>
+             <div className="relative z-10 flex justify-between items-start">
+                 <h2 className="text-lg font-serif text-red-400 mb-6 flex items-center gap-2">
+                    <Lock size={18} /> Sécurité Administrateur
+                 </h2>
+                 <span className="text-xs bg-red-900/30 text-red-400 px-2 py-1 border border-red-900/50">Zone Sensible</span>
+             </div>
+             
              <div className="space-y-6 relative z-10">
+                <p className="text-neutral-400 text-sm">
+                  Utilisez ce formulaire pour mettre à jour l'email de connexion ou le mot de passe de l'administrateur.
+                  <br/>La modification est immédiate.
+                </p>
+                
                 <div>
                    <label className="block text-neutral-400 text-xs uppercase tracking-widest mb-2">Email Administrateur</label>
                    <input 
@@ -283,7 +299,9 @@ const Settings: React.FC = () => {
            </div>
            
            <div className="flex justify-end">
-             <Button type="submit" className="bg-red-900 hover:bg-red-800 border-red-700"><Key size={18} /> Mettre à jour les accès</Button>
+             <Button type="submit" className="bg-red-900 hover:bg-red-800 border border-red-700 shadow-lg shadow-red-900/20">
+               <Key size={18} /> Mettre à jour les accès
+             </Button>
            </div>
          </form>
       )}

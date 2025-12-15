@@ -32,42 +32,30 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
   
-  // Fonction pour recharger les produits depuis la DB
-  const refreshProducts = async () => {
+  // Fonction pour charger les produits depuis l'API
+  const fetchProducts = async () => {
     try {
-        const res = await fetch('/api/products');
-        if (res.ok) {
-          const data = await res.json();
-          // On vérifie que data est un tableau valide
-          if (Array.isArray(data)) {
-            setProducts(data);
-          }
+      // Le header no-cache est important côté client aussi
+      const res = await fetch('/api/products', {
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data);
+        } else {
+          setProducts(PRODUCTS); // Fallback seulement si vide et API échoue
         }
-    } catch (e) {
-        console.error("Erreur refresh", e);
+      } else {
+         setProducts(PRODUCTS);
+      }
+    } catch (error) {
+      console.error("Erreur chargement produits:", error);
+      setProducts(PRODUCTS);
     }
   };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await fetch('/api/products');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setProducts(data);
-          } else {
-            setProducts(PRODUCTS); // Fallback seulement si vide et API échoue
-          }
-        } else {
-           // Si API fail, on met les mocks
-           setProducts(PRODUCTS);
-        }
-      } catch (error) {
-        console.error("Erreur chargement produits:", error);
-        setProducts(PRODUCTS);
-      }
-    };
     fetchProducts();
   }, []);
 
@@ -97,7 +85,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     heroSlogan: SLOGANS[0]
   });
 
-  // ✅ SAUVEGARDE STRICTE (Pas d'optimistic UI risqué pour l'admin)
+  // ✅ SAUVEGARDE STRICTE
   const addProduct = async (product: Product): Promise<boolean> => {
     const toastId = toast.loading('Sauvegarde sur le serveur...');
     try {
@@ -107,21 +95,18 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         body: JSON.stringify(product)
       });
       
-      if (!res.ok) {
-        throw new Error('Erreur API');
-      }
+      if (!res.ok) throw new Error('Erreur API');
 
-      // On attend que la DB confirme avant de mettre à jour l'UI
       const savedProduct = await res.json();
       
-      // On met à jour l'état local avec la réponse du serveur (garantie de sync)
+      // Mise à jour de l'état local avec la réponse du serveur
       setProducts(prev => [...prev, savedProduct]);
       
       toast.success('Produit créé avec succès !', { id: toastId });
       return true;
     } catch (error) {
       console.error("Erreur sauvegarde:", error);
-      toast.error("Échec sauvegarde. Vérifiez la taille de l'image (<5Mo).", { id: toastId });
+      toast.error("Échec sauvegarde. Vérifiez la taille de l'image (<50Mo).", { id: toastId });
       return false;
     }
   };
@@ -142,7 +127,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       // Mise à jour locale précise
       setProducts(prev => prev.map(p => p.id === id ? savedProduct : p));
       
-      toast.success('Produit mis à jour !', { id: toastId });
+      toast.success('Produit mis à jour définitivement !', { id: toastId });
       return true;
     } catch (error) {
       console.error("Erreur maj:", error);
@@ -158,7 +143,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if(!res.ok) throw new Error("Erreur");
       
       setProducts(prev => prev.filter(p => p.id !== id));
-      toast.success('Produit supprimé', { id: toastId });
+      toast.success('Produit supprimé définitivement', { id: toastId });
     } catch (error) {
       console.error("Erreur suppression:", error);
       toast.error("Erreur lors de la suppression", { id: toastId });
@@ -166,7 +151,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const updateStock = async (id: string, newStock: number) => {
-    // Optimistic pour le stock car c'est rapide et moins critique visuellement
+    // Optimistic pour le stock
     setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: newStock } : p));
     try {
       await fetch(`/api/products/${id}`, {

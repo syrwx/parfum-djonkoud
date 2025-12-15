@@ -1,8 +1,10 @@
+
 import { Product, Order, PaymentMethod } from './types';
 
 export const BRAND_NAME = "DJONKOUD PARFUM";
 export const CURRENCY = "FCFA";
 
+// Images mises à jour pour correspondre à la DB et être plus esthétiques
 export const PRODUCTS: Product[] = [
   {
     id: "1",
@@ -12,7 +14,7 @@ export const PRODUCTS: Product[] = [
     description: "Un mélange ancestral de graines de gowé et de résines rares.",
     story: "Inspiré par les cours royales de l'Empire Bambara, cet encens était brûlé lors des grandes cérémonies pour attirer prospérité et protection.",
     notes: ["Gowé", "Musc", "Ambre", "Oud"],
-    image: "https://picsum.photos/id/106/800/800",
+    image: "https://images.unsplash.com/photo-1595123550441-d377e017de6a?q=80&w=800&auto=format&fit=crop",
     rating: 4.9,
     stock: 50
   },
@@ -24,7 +26,7 @@ export const PRODUCTS: Product[] = [
     description: "Une fraîcheur aquatique mêlée aux fleurs des rives du Niger.",
     story: "Le fleuve Niger, source de vie, apporte une brise fraîche au crépuscule. Cette brume capture l'instant où le soleil se couche sur l'eau.",
     notes: ["Lotus", "Bergamote", "Santal", "Jasmin"],
-    image: "https://picsum.photos/id/292/800/800",
+    image: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=800&auto=format&fit=crop",
     rating: 4.7,
     stock: 30
   },
@@ -36,7 +38,7 @@ export const PRODUCTS: Product[] = [
     description: "Chaleur épicée et mystère du désert sous les étoiles.",
     story: "Évoque le silence mystique des bibliothèques anciennes et la chaleur du thé à la menthe servi sous une tente nomade.",
     notes: ["Épices", "Tabac", "Vanille", "Cuir"],
-    image: "https://picsum.photos/id/319/800/800",
+    image: "https://images.unsplash.com/photo-1603006905003-be475563bc59?q=80&w=800&auto=format&fit=crop",
     rating: 4.8,
     stock: 25
   },
@@ -48,7 +50,7 @@ export const PRODUCTS: Product[] = [
     description: "L'élégance absolue dans un coffret serti de motifs bogolan.",
     story: "Un hommage à la richesse culturelle du Mali, réunissant nos meilleures créations pour une expérience olfactive inoubliable.",
     notes: ["Safran", "Rose", "Oud", "Patchouli"],
-    image: "https://picsum.photos/id/360/800/800",
+    image: "https://images.unsplash.com/photo-1616401784845-180886ba9ca2?q=80&w=800&auto=format&fit=crop",
     rating: 5.0,
     stock: 10
   },
@@ -60,7 +62,7 @@ export const PRODUCTS: Product[] = [
     description: "L'authenticité des racines parfumées pour purifier l'atmosphère.",
     story: "Utilisé par les mères pour bénir la maison, le Diguidjé apporte une note terreuse et apaisante qui reconnecte à la terre.",
     notes: ["Vétiver", "Terre cuite", "Encens pur"],
-    image: "https://picsum.photos/id/514/800/800",
+    image: "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=800&auto=format&fit=crop",
     rating: 4.6,
     stock: 100
   },
@@ -72,7 +74,7 @@ export const PRODUCTS: Product[] = [
     description: "Douceur enveloppante et crémeuse pour un intérieur cocooning.",
     story: "Célébration de l'arbre de vie, le Karité. Une odeur douce, presque laiteuse, qui rappelle les soins de beauté traditionnels.",
     notes: ["Karité", "Amande", "Fleur d'oranger"],
-    image: "https://picsum.photos/id/600/800/800",
+    image: "https://images.unsplash.com/photo-1605218427368-36317b2c94d0?q=80&w=800&auto=format&fit=crop",
     rating: 4.8,
     stock: 45
   },
@@ -103,48 +105,6 @@ export const PRODUCTS: Product[] = [
     sku: "GP-ORL-STD",
     unit: "Paquet",
     stock: 60
-  },
-  {
-    id: "9",
-    name: "Djekalan Grand Cru",
-    price: 9500,
-    category: "Encens Traditionnel",
-    description: "Racines de Djekalan sélectionnées, lavées et parfumées artisanalement.",
-    story: "Le secret des foyers maliens. Ces racines, récoltées au bord du fleuve, diffusent une chaleur apaisante et une odeur de terre mouillée après la pluie.",
-    notes: ["Vétiver", "Terre", "Fleurs sauvages"],
-    image: "https://images.unsplash.com/photo-1598514930379-3221b069fa72?q=80&w=800&auto=format&fit=crop",
-    rating: 4.9,
-    sku: "GP-DJK-GC",
-    unit: "Paquet",
-    stock: 80
-  },
-  {
-    id: "10",
-    name: "Woussoulan Ambre Intense",
-    price: 18000,
-    category: "Encens",
-    description: "La puissance du Woussoulan traditionnel sublimée par un cœur d'ambre gris.",
-    story: "Une recette gardée jalousement, où les écorces macèrent des mois durant dans des huiles précieuses pour offrir une fumée dense et envoûtante.",
-    notes: ["Ambre", "Épices", "Musc"],
-    image: "https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=800&auto=format&fit=crop",
-    rating: 4.7,
-    sku: "GP-WAI-INT",
-    unit: "Pot 250g",
-    stock: 40
-  },
-  {
-    id: "11",
-    name: "Bakhour Sultan",
-    price: 14500,
-    category: "Encens",
-    description: "Copeaux de bois imprégnés d'huiles parfumées, de safran et de rose.",
-    story: "Un hommage à l'hospitalité légendaire. Ce Bakhour est brûlé pour honorer les invités de marque, emplissant l'espace d'une douceur florale et boisée.",
-    notes: ["Rose de Damas", "Safran", "Santal"],
-    image: "https://images.unsplash.com/photo-1547887538-e3a2f32cb1cc?q=80&w=800&auto=format&fit=crop",
-    rating: 4.8,
-    sku: "GP-BKH-SUL",
-    unit: "Paquet",
-    stock: 55
   }
 ];
 

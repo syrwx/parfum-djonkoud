@@ -26,6 +26,12 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Middleware Anti-Cache pour l'API (Assure de voir les modifs admin tout de suite)
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  next();
+});
+
 // --- SERVIR LE FRONTEND (FICHIERS STATIQUES) ---
 app.use(express.static(path.join(__dirname, 'dist')));
 
@@ -76,7 +82,7 @@ const AdminSchema = new mongoose.Schema({
 });
 const Admin = mongoose.model('Admin', AdminSchema);
 
-// --- DONNÉES INITIALES ---
+// --- DONNÉES INITIALES (Images Premium) ---
 const INITIAL_PRODUCTS = [
   {
     id: "1",
@@ -86,7 +92,7 @@ const INITIAL_PRODUCTS = [
     description: "Un mélange ancestral de graines de gowé et de résines rares.",
     story: "Inspiré par les cours royales de l'Empire Bambara, cet encens était brûlé lors des grandes cérémonies pour attirer prospérité et protection.",
     notes: ["Gowé", "Musc", "Ambre", "Oud"],
-    image: "https://picsum.photos/id/106/800/800",
+    image: "https://images.unsplash.com/photo-1595123550441-d377e017de6a?q=80&w=800&auto=format&fit=crop",
     rating: 4.9,
     stock: 50
   },
@@ -98,7 +104,7 @@ const INITIAL_PRODUCTS = [
     description: "Une fraîcheur aquatique mêlée aux fleurs des rives du Niger.",
     story: "Le fleuve Niger, source de vie, apporte une brise fraîche au crépuscule. Cette brume capture l'instant où le soleil se couche sur l'eau.",
     notes: ["Lotus", "Bergamote", "Santal", "Jasmin"],
-    image: "https://picsum.photos/id/292/800/800",
+    image: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=800&auto=format&fit=crop",
     rating: 4.7,
     stock: 30
   },
@@ -110,7 +116,7 @@ const INITIAL_PRODUCTS = [
     description: "Chaleur épicée et mystère du désert sous les étoiles.",
     story: "Évoque le silence mystique des bibliothèques anciennes et la chaleur du thé à la menthe servi sous une tente nomade.",
     notes: ["Épices", "Tabac", "Vanille", "Cuir"],
-    image: "https://picsum.photos/id/319/800/800",
+    image: "https://images.unsplash.com/photo-1603006905003-be475563bc59?q=80&w=800&auto=format&fit=crop",
     rating: 4.8,
     stock: 25
   },
@@ -122,9 +128,61 @@ const INITIAL_PRODUCTS = [
     description: "L'élégance absolue dans un coffret serti de motifs bogolan.",
     story: "Un hommage à la richesse culturelle du Mali, réunissant nos meilleures créations pour une expérience olfactive inoubliable.",
     notes: ["Safran", "Rose", "Oud", "Patchouli"],
-    image: "https://picsum.photos/id/360/800/800",
+    image: "https://images.unsplash.com/photo-1616401784845-180886ba9ca2?q=80&w=800&auto=format&fit=crop",
     rating: 5.0,
     stock: 10
+  },
+  {
+    id: "5",
+    name: "Diguidjé Sacré",
+    price: 12000,
+    category: "Encens",
+    description: "L'authenticité des racines parfumées pour purifier l'atmosphère.",
+    story: "Utilisé par les mères pour bénir la maison, le Diguidjé apporte une note terreuse et apaisante qui reconnecte à la terre.",
+    notes: ["Vétiver", "Terre cuite", "Encens pur"],
+    image: "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=800&auto=format&fit=crop",
+    rating: 4.6,
+    stock: 100
+  },
+  {
+    id: "6",
+    name: "Fleur de Karité",
+    price: 20000,
+    category: "Parfum d'Intérieur",
+    description: "Douceur enveloppante et crémeuse pour un intérieur cocooning.",
+    story: "Célébration de l'arbre de vie, le Karité. Une odeur douce, presque laiteuse, qui rappelle les soins de beauté traditionnels.",
+    notes: ["Karité", "Amande", "Fleur d'oranger"],
+    image: "https://images.unsplash.com/photo-1605218427368-36317b2c94d0?q=80&w=800&auto=format&fit=crop",
+    rating: 4.8,
+    stock: 45
+  },
+  {
+    id: "7",
+    name: "Bois d'Agar Pur (Oud)",
+    price: 3500000,
+    category: "Matière Première",
+    description: "Copeaux de bois d'agar naturel et rare, importés d'Asie.",
+    story: "Une pièce de collection pour les connaisseurs. Ce bois d'agar dégage une fragrance complexe et spirituelle.",
+    notes: ["Bois d'Agar", "Cuir Ancien", "Résine"],
+    image: "https://images.unsplash.com/photo-1621867208182-1c2543883a45?q=80&w=800&auto=format&fit=crop",
+    rating: 5.0,
+    sku: "GP-OUD-SUP-KILO",
+    unit: "KG",
+    stock: 5
+  },
+  {
+    id: "8",
+    name: "Oud Royal Luban",
+    price: 12000,
+    category: "Encens",
+    description: "Mélange luxueux de bois d'agar et de résine de Luban.",
+    story: "La rencontre majestueuse entre la sève sacrée de l'arbre à encens et la profondeur du bois d'oud.",
+    notes: ["Oliban", "Oud", "Agrumes séchés"],
+    image: "https://images.unsplash.com/photo-1608528577891-9b7e7b5a1b1a?q=80&w=800&auto=format&fit=crop",
+    rating: 4.8,
+    sku: "GP-ORL-STD",
+    unit: "Paquet",
+    stock: 60
   }
 ];
 
@@ -155,10 +213,11 @@ async function seedAdmin() {
 
 app.get('/api/status', (req, res) => res.json({ status: 'Online' }));
 
-// AUTH
+// AUTH (Login & Update Password)
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
+        // Authentification simple (sans hash pour ce MVP, en prod utiliser bcrypt)
         const user = await Admin.findOne({ email, password });
         if (user) res.json({ success: true, user: { email: user.email, name: 'Admin' } });
         else res.status(401).json({ success: false });
@@ -171,8 +230,14 @@ app.put('/api/auth/update', async (req, res) => {
         const update = {};
         if (newEmail) update.email = newEmail;
         if (newPassword) update.password = newPassword;
+        
+        // Mise à jour de l'admin trouvé par l'email courant
         const updated = await Admin.findOneAndUpdate({ email: currentEmail }, update, { new: true });
-        if (updated) res.json({ success: true, user: updated });
+        
+        if (updated) {
+            console.log("✅ Profil admin mis à jour");
+            res.json({ success: true, user: updated });
+        }
         else res.status(404).json({ success: false });
     } catch (e) { res.status(500).json({ error: "Erreur" }); }
 });
@@ -190,7 +255,11 @@ app.post('/api/products', async (req, res) => {
         const imageSize = req.body.image ? Math.round(req.body.image.length / 1024) + 'KB' : 'Pas d\'image';
         console.log(`📝 Création produit: ${req.body.name} (Image: ${imageSize})`);
         
-        const product = new Product(req.body);
+        // Utilisation de ID fourni ou fallback
+        const newProductData = { ...req.body };
+        if (!newProductData.id) newProductData.id = Date.now().toString();
+
+        const product = new Product(newProductData);
         await product.save();
         
         console.log('✅ Produit sauvegardé en DB !');
@@ -204,18 +273,33 @@ app.post('/api/products', async (req, res) => {
 app.put('/api/products/:id', async (req, res) => {
     try {
         console.log(`📝 Mise à jour produit ID: ${req.params.id}`);
+        // { new: true } est CRUCIAL pour retourner l'objet mis à jour
         const product = await Product.findOneAndUpdate({ id: req.params.id }, req.body, { new: true });
-        if(product) console.log('✅ Produit mis à jour en DB !');
-        else console.warn('⚠️ Produit non trouvé pour mise à jour');
-        res.json(product);
-    } catch (e) { res.status(500).json({ error: "Erreur" }); }
+        
+        if(product) {
+            console.log('✅ Produit mis à jour irréversiblement en DB !');
+            res.json(product);
+        } else {
+            console.warn('⚠️ Produit non trouvé pour mise à jour');
+            res.status(404).json({ error: "Produit non trouvé" });
+        }
+    } catch (e) { 
+        console.error("Erreur PUT:", e);
+        res.status(500).json({ error: "Erreur" }); 
+    }
 });
 
 app.delete('/api/products/:id', async (req, res) => {
     try {
         console.log(`🗑 Suppression produit ID: ${req.params.id}`);
-        await Product.deleteOne({ id: req.params.id });
-        res.json({ success: true });
+        const result = await Product.deleteOne({ id: req.params.id });
+        
+        if (result.deletedCount > 0) {
+            console.log('✅ Produit supprimé définitivement');
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ error: "Produit non trouvé" });
+        }
     } catch (e) { res.status(500).json({ error: "Erreur" }); }
 });
 
