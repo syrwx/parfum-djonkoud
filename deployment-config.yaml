@@ -1,0 +1,6 @@
+template-file-path: aws-cloudformation.yaml
+parameters:
+  InstanceType: t3.micro
+tags:
+  Project: Djonkoud
+  Environment: Production

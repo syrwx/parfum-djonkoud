@@ -1,0 +1,45 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          port: 22
+          script: |
+            # Se déplacer dans le dossier de l'application
+            cd /var/www/djonkoud
+            
+            # Réinitialiser les permissions au cas où
+            sudo chown -R ubuntu:ubuntu .
+            
+            # Récupérer le dernier code depuis GitHub
+            git reset --hard origin/main
+            git pull origin main
+            
+            # Installer les dépendances (Backend & Frontend)
+            # --legacy-peer-deps évite les blocages sur les versions de paquets
+            npm install --legacy-peer-deps
+            
+            # RECONSTRUIRE LE FRONTEND (C'est cette étape qui met à jour le visuel)
+            npm run build
+            
+            # Redémarrer le serveur Backend via PM2 pour prendre en compte les changements
+            pm2 restart djonkoud-api || pm2 start server.js --name "djonkoud-api"
+            
+            # Sauvegarder la liste des processus pour le redémarrage auto
+            pm2 save
