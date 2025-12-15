@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../components/ui/Button';
@@ -50,16 +51,24 @@ const About: React.FC = () => {
             </div>
           </div>
           
-          <div className="relative">
-            <div className="aspect-[4/5] border border-amber-900/30 p-4">
+          <div className="relative group">
+            {/* Cadre Image Stylisé */}
+            <div className="aspect-[4/5] bg-neutral-900 border-2 border-amber-900/40 p-3 relative shadow-2xl shadow-black/50">
+              {/* Double border effect interne */}
+              <div className="absolute inset-0 m-2 border border-amber-500/20 pointer-events-none z-10"></div>
+              
               <img 
-                src="https://images.unsplash.com/photo-1605218427368-36317b2c94d0?q=80&w=1000&auto=format&fit=crop" 
-                alt="Craftsmanship" 
-                className="w-full h-full object-cover opacity-80"
+                src="https://images.unsplash.com/photo-1603006905003-be475563bc59?q=80&w=1000&auto=format&fit=crop" 
+                alt="Nuit à Tombouctou - Savoir-faire" 
+                className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-700 filter contrast-110"
               />
             </div>
-            <div className="absolute -bottom-8 -left-8 bg-neutral-900 border border-amber-500 p-6 shadow-2xl max-w-xs hidden md:block">
-              <p className="font-serif italic text-amber-200 text-lg">
+            
+            {/* Citation Flottante */}
+            <div className="absolute -bottom-6 -left-6 bg-neutral-950 border border-amber-600/50 p-6 shadow-xl max-w-xs hidden md:block z-20">
+              <div className="absolute top-0 left-0 w-2 h-2 bg-amber-500"></div>
+              <div className="absolute bottom-0 right-0 w-2 h-2 bg-amber-500"></div>
+              <p className="font-serif italic text-amber-200 text-lg leading-snug">
                 "Le parfum est l'architecture invisible de notre mémoire."
               </p>
             </div>
