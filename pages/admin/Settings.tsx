@@ -4,8 +4,15 @@ import { useStore } from '../../context/StoreContext';
 import { useAuth } from '../../context/AuthContext';
 import { ContactInfo, SiteSettings, WhatsAppAgent } from '../../types';
 import Button from '../../components/ui/Button';
-import { Save, MapPin, Mail, Clock, Globe, Layout, Image as ImageIcon, MessageCircle, Plus, Trash2, Edit2, ShieldCheck, Users, Phone, Lock, Key, Check } from 'lucide-react';
+import { Save, MapPin, Mail, Clock, Globe, Layout, Image as ImageIcon, Plus, Trash2, Edit2, ShieldCheck, Users, Phone, Lock, Key, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+// Composant SVG officiel WhatsApp pour un rendu net
+const WhatsAppIcon = ({ size = 20, className = "" }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+  </svg>
+);
 
 const Settings: React.FC = () => {
   const { contactInfo, updateContactInfo, siteSettings, updateSiteSettings } = useStore();
@@ -119,7 +126,7 @@ const Settings: React.FC = () => {
       case 'export': return <Globe size={16} className="text-blue-400"/>;
       case 'wholesale': return <Users size={16} className="text-purple-400"/>;
       case 'support': return <ShieldCheck size={16} className="text-red-400"/>;
-      default: return <MessageCircle size={16} className="text-green-400"/>;
+      default: return <WhatsAppIcon size={16} className="text-green-500"/>;
     }
   };
 
@@ -135,7 +142,7 @@ const Settings: React.FC = () => {
       {/* Tabs */}
       <div className="flex space-x-2 mb-8 overflow-x-auto pb-2">
         <button onClick={() => setActiveTab('contact')} className={`px-4 py-3 text-sm uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'contact' ? 'bg-amber-600 text-white font-bold' : 'bg-neutral-900 text-neutral-400 hover:text-amber-500'}`}>Info Base</button>
-        <button onClick={() => setActiveTab('whatsapp')} className={`px-4 py-3 text-sm uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'whatsapp' ? 'bg-green-700 text-white font-bold' : 'bg-neutral-900 text-green-500 hover:text-green-400'}`}><MessageCircle size={16} /> Équipe WhatsApp</button>
+        <button onClick={() => setActiveTab('whatsapp')} className={`px-4 py-3 text-sm uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'whatsapp' ? 'bg-green-700 text-white font-bold' : 'bg-neutral-900 text-green-500 hover:text-green-400'}`}><WhatsAppIcon size={16} /> Équipe WhatsApp</button>
         <button onClick={() => setActiveTab('appearance')} className={`px-4 py-3 text-sm uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'appearance' ? 'bg-amber-600 text-white font-bold' : 'bg-neutral-900 text-neutral-400 hover:text-amber-500'}`}>Design Site</button>
         <button onClick={() => setActiveTab('security')} className={`px-4 py-3 text-sm uppercase tracking-widest transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === 'security' ? 'bg-red-900 text-white font-bold' : 'bg-neutral-900 text-red-400 hover:text-red-300'}`}><Lock size={16} /> Sécurité Admin</button>
       </div>
@@ -183,19 +190,29 @@ const Settings: React.FC = () => {
       {/* WHATSAPP TEAM TAB */}
       {activeTab === 'whatsapp' && (
         <div className="animate-fade-in space-y-6">
-          <div className="bg-green-950/20 border border-green-900/50 p-6">
-             <div className="flex justify-between items-start mb-6">
-               <div><h2 className="text-xl font-serif text-green-400 mb-2">Segmentation WhatsApp</h2><p className="text-neutral-400 text-sm">Gérez les numéros qui recevront les commandes.</p></div>
-               <Button onClick={handleAddAgent} variant="outline" className="border-green-600 text-green-400 hover:bg-green-900/30"><Plus size={18} /> Ajouter un numéro</Button>
+          <div className="bg-neutral-900 border border-green-900/50 p-6 relative overflow-hidden">
+             {/* Background subtil WhatsApp */}
+             <div className="absolute top-0 right-0 w-64 h-64 bg-green-900/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+             
+             <div className="flex justify-between items-start mb-6 relative z-10">
+               <div>
+                 <h2 className="text-xl font-serif text-green-400 mb-2 flex items-center gap-2">
+                   <WhatsAppIcon size={24} /> Segmentation WhatsApp
+                 </h2>
+                 <p className="text-neutral-400 text-sm">Gérez les numéros qui recevront les commandes.</p>
+               </div>
+               <Button onClick={handleAddAgent} variant="outline" className="border-green-600 text-green-400 hover:bg-green-900/20 hover:text-green-300"><Plus size={18} /> Ajouter un numéro</Button>
              </div>
-             <div className="space-y-3">
+             <div className="space-y-3 relative z-10">
                {contactData.whatsAppAgents.map(agent => (
-                 <div key={agent.id} className="bg-black/50 border border-neutral-800 p-4 flex items-center justify-between group hover:border-green-800 transition-colors">
+                 <div key={agent.id} className="bg-black border border-neutral-800 p-4 flex items-center justify-between group hover:border-green-600/50 transition-colors shadow-lg">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-700">{getRoleIcon(agent.role)}</div>
+                      <div className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 group-hover:border-green-900 transition-colors">
+                        {getRoleIcon(agent.role)}
+                      </div>
                       <div>
                         <div className="flex items-center gap-2"><span className="font-bold text-white">{agent.name}</span><span className="text-[10px] uppercase tracking-wider px-2 py-0.5 bg-neutral-800 text-neutral-400 rounded-sm">{agent.role}</span></div>
-                        <p className="text-green-500 font-mono text-sm">{agent.phone}</p>
+                        <p className="text-green-600 font-mono text-sm tracking-wide">{agent.phone}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -208,15 +225,25 @@ const Settings: React.FC = () => {
           </div>
           {editingAgent && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-              <div className="bg-neutral-900 w-full max-w-md border border-green-900/50 p-6 shadow-2xl">
-                <h3 className="text-xl font-serif text-green-400 mb-6">Configuration Numéro</h3>
+              <div className="bg-neutral-900 w-full max-w-md border border-green-900/50 p-6 shadow-2xl relative">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-600 to-green-400"></div>
+                <h3 className="text-xl font-serif text-green-400 mb-6 flex items-center gap-2"><WhatsAppIcon size={20}/> Configuration Numéro</h3>
                 <div className="space-y-4">
-                  <input type="text" placeholder="Nom" value={editingAgent.name || ''} onChange={e => setEditingAgent({...editingAgent, name: e.target.value})} className="w-full bg-black border border-neutral-700 p-3 text-white outline-none" />
-                  <input type="text" placeholder="Téléphone" value={editingAgent.phone || ''} onChange={e => setEditingAgent({...editingAgent, phone: e.target.value})} className="w-full bg-black border border-neutral-700 p-3 text-white outline-none" />
-                  <select value={editingAgent.role || 'general'} onChange={e => setEditingAgent({...editingAgent, role: e.target.value as any})} className="w-full bg-black border border-neutral-700 p-3 text-white outline-none">
-                      <option value="general">Général</option><option value="export">Export</option><option value="wholesale">Grossistes</option><option value="support">SAV</option>
-                  </select>
-                  <div className="flex gap-3 pt-4"><Button onClick={() => setEditingAgent(null)} variant="ghost" fullWidth>Annuler</Button><Button onClick={saveAgent} fullWidth className="bg-green-600 hover:bg-green-500 text-white">Enregistrer</Button></div>
+                  <div>
+                    <label className="block text-green-100/50 text-xs uppercase tracking-widest mb-1">Nom du contact</label>
+                    <input type="text" placeholder="Ex: Service Commercial" value={editingAgent.name || ''} onChange={e => setEditingAgent({...editingAgent, name: e.target.value})} className="w-full bg-black border border-neutral-700 p-3 text-white outline-none focus:border-green-500" />
+                  </div>
+                  <div>
+                    <label className="block text-green-100/50 text-xs uppercase tracking-widest mb-1">Numéro (avec indicatif)</label>
+                    <input type="text" placeholder="+223 00 00 00 00" value={editingAgent.phone || ''} onChange={e => setEditingAgent({...editingAgent, phone: e.target.value})} className="w-full bg-black border border-neutral-700 p-3 text-white outline-none focus:border-green-500 font-mono" />
+                  </div>
+                  <div>
+                    <label className="block text-green-100/50 text-xs uppercase tracking-widest mb-1">Rôle</label>
+                    <select value={editingAgent.role || 'general'} onChange={e => setEditingAgent({...editingAgent, role: e.target.value as any})} className="w-full bg-black border border-neutral-700 p-3 text-white outline-none focus:border-green-500">
+                        <option value="general">Général</option><option value="export">Export</option><option value="wholesale">Grossistes</option><option value="support">SAV</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-3 pt-4"><Button onClick={() => setEditingAgent(null)} variant="ghost" fullWidth>Annuler</Button><Button onClick={saveAgent} fullWidth className="bg-green-600 hover:bg-green-500 text-white border-none">Enregistrer</Button></div>
                 </div>
               </div>
             </div>
