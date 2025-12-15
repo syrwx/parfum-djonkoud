@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
 import Button from '../components/ui/Button';
 import { CURRENCY } from '../constants';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, MessageCircle, Loader2, Globe, Truck, Sparkles, Users } from 'lucide-react';
+import { CreditCard, MessageCircle, Loader2, Globe, Truck, Sparkles, Users, Ticket, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Coupon } from '../types';
 
 const Checkout: React.FC = () => {
   const { cart, cartTotal, clearCart } = useCart();
@@ -17,6 +19,11 @@ const Checkout: React.FC = () => {
   // Gestion Internationale
   const [country, setCountry] = useState('Mali');
   const [shippingCost, setShippingCost] = useState(0);
+
+  // Gestion Codes Promo
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [verifyingCode, setVerifyingCode] = useState(false);
 
   // États du formulaire
   const [formData, setFormData] = useState({
@@ -47,7 +54,17 @@ const Checkout: React.FC = () => {
     }
   }, [country]);
 
-  const grandTotal = cartTotal + shippingCost;
+  // --- LOGIQUE REMISE ---
+  const calculateDiscount = () => {
+    if (!appliedCoupon) return 0;
+    if (appliedCoupon.type === 'percent') {
+        return (cartTotal * appliedCoupon.value) / 100;
+    }
+    return appliedCoupon.value;
+  };
+
+  const discountAmount = calculateDiscount();
+  const grandTotal = Math.max(0, cartTotal + shippingCost - discountAmount);
   const isInternational = country !== 'Mali';
 
   // --- LOGIQUE DE SÉLECTION INTELLIGENTE DE L'AGENT ---
@@ -71,6 +88,31 @@ const Checkout: React.FC = () => {
      return generalAgent || agents[0];
   };
 
+  const handleVerifyCoupon = async () => {
+    if (!promoCode) return;
+    setVerifyingCode(true);
+    try {
+        const res = await fetch('/api/coupons/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: promoCode })
+        });
+        const data = await res.json();
+        
+        if (data.valid) {
+            setAppliedCoupon(data.coupon);
+            toast.success("Code promo appliqué !");
+        } else {
+            toast.error(data.message || "Code invalide");
+            setAppliedCoupon(null);
+        }
+    } catch (e) {
+        toast.error("Erreur vérification");
+    } finally {
+        setVerifyingCode(false);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -92,7 +134,6 @@ const Checkout: React.FC = () => {
     message += `Destinataire: *${targetAgent.name}*\n\n`;
     message += `👤 *Client:* ${formData.name || 'Non spécifié'}\n`;
     message += `🌍 *Pays:* ${country}\n`;
-    message += `🏙 *Ville:* ${formData.city || 'Non spécifié'}\n`;
     message += `📞 *Tel:* ${formData.phone || 'Non spécifié'}\n`;
     message += `📍 *Adresse:* ${formData.address || 'Non spécifié'}\n\n`;
     message += `🛒 *PANIER:*\n`;
@@ -102,6 +143,11 @@ const Checkout: React.FC = () => {
     });
 
     message += `\n📦 *Livraison:* ${shippingCost.toLocaleString()} ${CURRENCY}\n`;
+    
+    if (appliedCoupon) {
+      message += `🎟 *Code Promo:* ${appliedCoupon.code} (-${discountAmount.toLocaleString()} FCFA)\n`;
+    }
+
     message += `💰 *TOTAL FINAL: ${grandTotal.toLocaleString()} ${CURRENCY}*\n`;
     
     if (formData.instructions) {
@@ -114,7 +160,6 @@ const Checkout: React.FC = () => {
   };
 
   const handlePayment = async () => {
-    // ... (Code existant inchangé pour le paiement classique)
     if (!paymentMethod) {
       toast.error("Veuillez choisir un mode de paiement");
       return;
@@ -140,7 +185,11 @@ const Checkout: React.FC = () => {
         })),
         total: grandTotal,
         paymentMethod: paymentMethod,
-        status: 'paid'
+        status: 'paid',
+        discountApplied: appliedCoupon ? {
+          code: appliedCoupon.code,
+          amount: discountAmount
+        } : undefined
       };
 
       const response = await fetch('/api/orders', {
@@ -245,6 +294,42 @@ const Checkout: React.FC = () => {
                  <span className="flex items-center gap-2"><Truck size={14}/> Livraison ({country})</span>
                  <span>{shippingCost === 0 ? 'Gratuit' : `+ ${shippingCost.toLocaleString()} ${CURRENCY}`}</span>
                </div>
+               {appliedCoupon && (
+                 <div className="flex justify-between text-green-500 animate-fade-in">
+                    <span className="flex items-center gap-2"><Ticket size={14}/> Code Promo ({appliedCoupon.code})</span>
+                    <span>- {discountAmount.toLocaleString()} {CURRENCY}</span>
+                 </div>
+               )}
+             </div>
+
+             {/* Code Promo Input */}
+             <div className="mb-6">
+                <div className="flex gap-2">
+                    <input 
+                        type="text" 
+                        value={promoCode} 
+                        onChange={e => setPromoCode(e.target.value.toUpperCase())}
+                        placeholder="CODE PROMO"
+                        className="flex-1 bg-black border border-neutral-700 p-2 text-white text-sm outline-none focus:border-amber-500 uppercase font-mono tracking-wider"
+                        disabled={!!appliedCoupon}
+                    />
+                    {appliedCoupon ? (
+                        <button 
+                            onClick={() => { setAppliedCoupon(null); setPromoCode(''); }}
+                            className="px-3 bg-neutral-800 text-neutral-400 hover:text-white"
+                        >
+                            <span className="text-xs uppercase">Retirer</span>
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={handleVerifyCoupon}
+                            disabled={verifyingCode || !promoCode}
+                            className="px-3 bg-neutral-800 border border-neutral-700 text-amber-500 hover:bg-neutral-700 disabled:opacity-50"
+                        >
+                            {verifyingCode ? <Loader2 size={16} className="animate-spin"/> : <span className="text-xs uppercase font-bold">Appliquer</span>}
+                        </button>
+                    )}
+                </div>
              </div>
 
              <div className="flex justify-between mb-8 text-2xl text-amber-500 font-serif font-bold">

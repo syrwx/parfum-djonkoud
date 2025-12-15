@@ -45,6 +45,10 @@ export interface Order {
   paymentMethod: PaymentMethod;
   date: string;
   shippingAddress?: string;
+  discountApplied?: {
+    code: string;
+    amount: number;
+  };
 }
 
 export interface WhatsAppAgent {
@@ -71,4 +75,12 @@ export interface SiteSettings {
   heroSubtitle: string;
   heroImage: string;
   heroSlogan: string;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  type: 'percent' | 'fixed';
+  value: number;
+  active: boolean;
 }

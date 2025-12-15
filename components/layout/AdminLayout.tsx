@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Link, useLocation, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../Logo';
-import { LayoutDashboard, Package, ShoppingCart, LogOut, Layers, Settings } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, LogOut, Layers, Settings, Ticket } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
@@ -17,6 +18,7 @@ const AdminLayout: React.FC = () => {
     { path: '/admin/products', label: 'Produits', icon: Package },
     { path: '/admin/orders', label: 'Commandes', icon: ShoppingCart },
     { path: '/admin/inventory', label: 'Stocks', icon: Layers },
+    { path: '/admin/coupons', label: 'Codes Promo', icon: Ticket },
     { path: '/admin/settings', label: 'Paramètres', icon: Settings },
   ];
 

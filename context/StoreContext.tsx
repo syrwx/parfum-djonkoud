@@ -1,12 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product, Order, OrderStatus, ContactInfo, SiteSettings } from '../types';
+import { Product, Order, OrderStatus, ContactInfo, SiteSettings, Coupon } from '../types';
 import { PRODUCTS, MOCK_ORDERS, SLOGANS } from '../constants';
 import toast from 'react-hot-toast';
 
 interface StoreContextType {
   products: Product[];
   orders: Order[];
+  coupons: Coupon[];
   contactInfo: ContactInfo;
   siteSettings: SiteSettings;
   addProduct: (product: Product) => Promise<boolean>;
@@ -16,6 +17,9 @@ interface StoreContextType {
   updateOrderStatus: (id: string, status: OrderStatus) => void;
   updateContactInfo: (info: ContactInfo) => void;
   updateSiteSettings: (settings: SiteSettings) => void;
+  addCoupon: (coupon: Partial<Coupon>) => Promise<boolean>;
+  deleteCoupon: (id: string) => Promise<void>;
+  refreshCoupons: () => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -31,11 +35,11 @@ export const useStore = () => {
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   
   // Fonction pour charger les produits depuis l'API
   const fetchProducts = async () => {
     try {
-      // Le header no-cache est important côté client aussi
       const res = await fetch('/api/products', {
         headers: { 'Cache-Control': 'no-cache' }
       });
@@ -44,7 +48,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (Array.isArray(data) && data.length > 0) {
           setProducts(data);
         } else {
-          setProducts(PRODUCTS); // Fallback seulement si vide et API échoue
+          setProducts(PRODUCTS); 
         }
       } else {
          setProducts(PRODUCTS);
@@ -55,8 +59,21 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  const fetchCoupons = async () => {
+    try {
+      const res = await fetch('/api/coupons', { headers: { 'Cache-Control': 'no-cache' } });
+      if (res.ok) {
+        const data = await res.json();
+        setCoupons(data);
+      }
+    } catch (error) {
+      console.error("Erreur chargement coupons:", error);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
+    fetchCoupons();
   }, []);
 
   const [contactInfo, setContactInfo] = useState<ContactInfo>({
@@ -98,8 +115,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (!res.ok) throw new Error('Erreur API');
 
       const savedProduct = await res.json();
-      
-      // Mise à jour de l'état local avec la réponse du serveur
       setProducts(prev => [...prev, savedProduct]);
       
       toast.success('Produit créé avec succès !', { id: toastId });
@@ -123,8 +138,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (!res.ok) throw new Error('Erreur API');
       
       const savedProduct = await res.json();
-
-      // Mise à jour locale précise
       setProducts(prev => prev.map(p => p.id === id ? savedProduct : p));
       
       toast.success('Produit mis à jour définitivement !', { id: toastId });
@@ -151,7 +164,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const updateStock = async (id: string, newStock: number) => {
-    // Optimistic pour le stock
     setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: newStock } : p));
     try {
       await fetch(`/api/products/${id}`, {
@@ -181,10 +193,43 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setSiteSettings(settings);
   };
 
+  // --- COUPON MANAGEMENT ---
+  const addCoupon = async (coupon: Partial<Coupon>): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(coupon)
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Erreur');
+      }
+      const newCoupon = await res.json();
+      setCoupons(prev => [...prev, newCoupon]);
+      toast.success("Code promo créé");
+      return true;
+    } catch (error: any) {
+      toast.error(error.message);
+      return false;
+    }
+  };
+
+  const deleteCoupon = async (id: string) => {
+    try {
+      await fetch(`/api/coupons/${id}`, { method: 'DELETE' });
+      setCoupons(prev => prev.filter(c => c.id !== id));
+      toast.success("Code supprimé");
+    } catch (e) {
+      toast.error("Erreur suppression");
+    }
+  };
+
   return (
     <StoreContext.Provider value={{ 
       products, 
       orders, 
+      coupons,
       contactInfo,
       siteSettings,
       addProduct, 
@@ -193,7 +238,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       updateStock,
       updateOrderStatus,
       updateContactInfo,
-      updateSiteSettings
+      updateSiteSettings,
+      addCoupon,
+      deleteCoupon,
+      refreshCoupons: fetchCoupons
     }}>
       {children}
     </StoreContext.Provider>

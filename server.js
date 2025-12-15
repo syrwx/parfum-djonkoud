@@ -71,7 +71,11 @@ const OrderSchema = new mongoose.Schema({
     paymentMethod: String,
     status: { type: String, default: 'pending' },
     instructions: String,
-    date: { type: Date, default: Date.now }
+    date: { type: Date, default: Date.now },
+    discountApplied: {
+      code: String,
+      amount: Number
+    }
 });
 const Order = mongoose.model('Order', OrderSchema);
 
@@ -81,6 +85,15 @@ const AdminSchema = new mongoose.Schema({
     role: { type: String, default: 'admin' }
 });
 const Admin = mongoose.model('Admin', AdminSchema);
+
+const CouponSchema = new mongoose.Schema({
+    id: { type: String, unique: true },
+    code: { type: String, required: true, unique: true }, // Uppercase stocké
+    type: { type: String, enum: ['percent', 'fixed'], default: 'percent' },
+    value: Number,
+    active: { type: Boolean, default: true }
+});
+const Coupon = mongoose.model('Coupon', CouponSchema);
 
 // --- DONNÉES INITIALES (Images Premium) ---
 const INITIAL_PRODUCTS = [
@@ -301,6 +314,57 @@ app.delete('/api/products/:id', async (req, res) => {
             res.status(404).json({ error: "Produit non trouvé" });
         }
     } catch (e) { res.status(500).json({ error: "Erreur" }); }
+});
+
+// COUPONS
+app.get('/api/coupons', async (req, res) => {
+    try {
+        const coupons = await Coupon.find();
+        res.json(coupons);
+    } catch (e) { res.status(500).json({ error: "Erreur" }); }
+});
+
+app.post('/api/coupons', async (req, res) => {
+    try {
+        const { code, type, value, active } = req.body;
+        const newCoupon = new Coupon({
+            id: Date.now().toString(),
+            code: code.toUpperCase(),
+            type,
+            value,
+            active
+        });
+        await newCoupon.save();
+        res.json(newCoupon);
+    } catch (e) {
+        console.error(e);
+        if (e.code === 11000) {
+            return res.status(400).json({ error: "Ce code existe déjà" });
+        }
+        res.status(500).json({ error: "Erreur lors de la création du code" });
+    }
+});
+
+app.delete('/api/coupons/:id', async (req, res) => {
+    try {
+        await Coupon.deleteOne({ id: req.params.id });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: "Erreur" }); }
+});
+
+app.post('/api/coupons/verify', async (req, res) => {
+    try {
+        const { code } = req.body;
+        const coupon = await Coupon.findOne({ code: code.toUpperCase(), active: true });
+        
+        if (!coupon) {
+            return res.status(404).json({ valid: false, message: "Code invalide ou expiré" });
+        }
+        
+        res.json({ valid: true, coupon });
+    } catch (e) {
+        res.status(500).json({ error: "Erreur verification" });
+    }
 });
 
 // ORDERS

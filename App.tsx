@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
@@ -17,6 +18,7 @@ import Dashboard from './pages/admin/Dashboard';
 import ProductsManager from './pages/admin/Products';
 import OrdersManager from './pages/admin/Orders';
 import InventoryManager from './pages/admin/Inventory';
+import CouponsManager from './pages/admin/Coupons';
 import Settings from './pages/admin/Settings';
 import FloatingWhatsApp from './components/FloatingWhatsApp';
 import { CartProvider } from './context/CartContext';
@@ -71,6 +73,7 @@ const App: React.FC = () => {
                 <Route path="products" element={<ProductsManager />} />
                 <Route path="orders" element={<OrdersManager />} />
                 <Route path="inventory" element={<InventoryManager />} />
+                <Route path="coupons" element={<CouponsManager />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
             </Routes>
