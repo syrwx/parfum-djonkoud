@@ -1,3 +1,4 @@
+
 AWSTemplateFormatVersion: '2010-09-09'
 Description: "DJONKOUD PARFUM - Full Stack Auto-Deployment (EC2 + MongoDB + Nginx + Node.js)"
 
@@ -154,6 +155,7 @@ Resources:
           server {
               listen 80;
               server_name _;
+              client_max_body_size 50M;
               
               location / {
                   proxy_pass http://localhost:3000;

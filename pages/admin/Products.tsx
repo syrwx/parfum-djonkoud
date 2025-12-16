@@ -63,20 +63,71 @@ const ProductsManager: React.FC = () => {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Fonction utilitaire pour compresser l'image
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 1200; // Largeur max suffisante pour le web
+          const MAX_HEIGHT = 1200;
+          let width = img.width;
+          let height = img.height;
+
+          // Calcul des nouvelles dimensions en gardant le ratio
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            // Compression en WebP à 80% de qualité (bon compromis poids/qualité)
+            const dataUrl = canvas.toDataURL('image/webp', 0.8);
+            resolve(dataUrl);
+          } else {
+            reject(new Error("Impossible d'initialiser le canvas"));
+          }
+        };
+        img.onerror = (error) => reject(error);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5000000) { 
-        toast.error("L'image est trop lourde (> 5MB)");
+      // Nouvelle limite frontend : 20 Mo (au lieu de 5 Mo)
+      if (file.size > 20000000) { 
+        toast.error("L'image est trop lourde (> 20MB)");
         return;
       }
       
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setEditingProduct(prev => ({ ...prev, image: reader.result as string }));
-        toast.success("Image chargée ! Pensez à enregistrer.");
-      };
-      reader.readAsDataURL(file);
+      const toastId = toast.loading("Optimisation de l'image...");
+      try {
+        // Compression avant de set le state
+        const compressedImage = await compressImage(file);
+        setEditingProduct(prev => ({ ...prev, image: compressedImage }));
+        toast.success("Image chargée et optimisée !", { id: toastId });
+      } catch (error) {
+        console.error(error);
+        toast.error("Erreur lors du traitement de l'image", { id: toastId });
+      }
     }
   };
 
@@ -225,7 +276,7 @@ const ProductsManager: React.FC = () => {
                         </button>
                      </div>
                   </div>
-                  <p className="text-[10px] text-neutral-500">Formats supportés: JPG, PNG, WebP. Max 5MB.</p>
+                  <p className="text-[10px] text-neutral-500">Formats supportés: JPG, PNG, WebP. Optimisation automatique.</p>
                 </div>
               </div>
 
