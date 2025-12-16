@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
 import Button from '../components/ui/Button';
 import { CURRENCY } from '../constants';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { CreditCard, MessageCircle, Loader2, Globe, Truck, Sparkles, Users, Ticket, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Coupon } from '../types';
@@ -12,7 +12,7 @@ import { Coupon } from '../types';
 const Checkout: React.FC = () => {
   const { cart, cartTotal, clearCart } = useCart();
   const { contactInfo } = useStore();
-  const history = useHistory();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'WAVE' | 'OM' | 'CARD' | null>(null);
   
@@ -204,7 +204,7 @@ const Checkout: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 1000));
         clearCart();
         toast.success("Commande confirmée !");
-        history.push('/');
+        navigate('/');
       } else {
         throw new Error(data.error || "Erreur serveur");
       }
@@ -345,62 +345,4 @@ const Checkout: React.FC = () => {
                     <h3 className="text-amber-400 font-bold flex items-center gap-2 mb-2">
                       <Sparkles size={18} /> Service Export VIP
                     </h3>
-                    <p className="text-sm text-neutral-300 mb-4 leading-relaxed">
-                      Expéditions vers <strong>{country}</strong>. Prise en charge par le service export (DHL, GP).
-                    </p>
-                    <button 
-                      onClick={handleWhatsAppCheckout}
-                      className="w-full py-4 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold flex items-center justify-center gap-2 transition-all uppercase tracking-widest text-sm shadow-lg border border-amber-400/30"
-                    >
-                      <MessageCircle size={18} /> Discuter avec {activeAgent?.name}
-                    </button>
-                 </div>
-               </div>
-             ) : (
-               // LOCAL MALI UI
-               <div className="space-y-6">
-                 {/* Logic Bonus: Si grosse commande, on propose le service grossiste */}
-                 {cartTotal > 100000 && (
-                   <div className="p-3 bg-purple-900/20 border border-purple-500/30 text-xs text-purple-200 flex items-center gap-2">
-                      <Users size={16} /> 
-                      <span className="font-bold">Commande Volumineuse :</span> Vous serez redirigé vers le service Grossistes.
-                   </div>
-                 )}
-
-                 <div className="p-4 bg-green-950/30 border border-green-600/50 rounded shadow-lg shadow-green-900/10">
-                    <button 
-                      onClick={handleWhatsAppCheckout}
-                      className="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-bold flex items-center justify-center gap-2 transition-colors uppercase tracking-widest text-sm shadow-md"
-                    >
-                      <MessageCircle size={18} /> Commander via {activeAgent?.name}
-                    </button>
-                 </div>
-
-                 <div className="relative flex py-4 items-center">
-                    <div className="flex-grow border-t border-neutral-800"></div>
-                    <span className="flex-shrink-0 mx-4 text-neutral-500 text-xs uppercase">Ou paiement direct</span>
-                    <div className="flex-grow border-t border-neutral-800"></div>
-                 </div>
-
-                 <div className="space-y-3 mb-8">
-                   <button onClick={() => setPaymentMethod('WAVE')} className={`w-full p-3 border flex justify-between ${paymentMethod === 'WAVE' ? 'border-amber-500 bg-amber-900/20' : 'border-neutral-700'}`}>
-                     <span className="text-blue-400 font-bold">Wave</span>
-                   </button>
-                   <button onClick={() => setPaymentMethod('OM')} className={`w-full p-3 border flex justify-between ${paymentMethod === 'OM' ? 'border-amber-500 bg-amber-900/20' : 'border-neutral-700'}`}>
-                     <span className="text-orange-500 font-bold">Orange Money</span>
-                   </button>
-                 </div>
-
-                 <Button fullWidth onClick={handlePayment} disabled={loading}>
-                   {loading ? <span className="flex items-center gap-2"><Loader2 className="animate-spin" size={18}/> Traitement...</span> : 'Confirmer la Commande'}
-                 </Button>
-               </div>
-             )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Checkout;
+                    <p className="text-sm

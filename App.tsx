@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { HashRouter, Switch, Route, Redirect, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import Home from './pages/Home';
@@ -53,35 +53,35 @@ const App: React.FC = () => {
         <CartProvider>
           <HashRouter>
             <ScrollToTop />
-            <Switch>
+            <Routes>
               {/* Admin Routes - Login first for specificity */}
-              <Route path="/admin/login" component={AdminLogin} />
+              <Route path="/admin/login" element={<AdminLogin />} />
               
-              <Route path="/admin" render={() => (
+              <Route path="/admin/*" element={
                 <AdminLayout>
-                  <Switch>
-                    <Route exact path="/admin"><Redirect to="/admin/dashboard" /></Route>
-                    <Route path="/admin/dashboard" component={Dashboard} />
-                    <Route path="/admin/products" component={ProductsManager} />
-                    <Route path="/admin/orders" component={OrdersManager} />
-                    <Route path="/admin/inventory" component={InventoryManager} />
-                    <Route path="/admin/coupons" component={CouponsManager} />
-                    <Route path="/admin/settings" component={Settings} />
-                  </Switch>
+                  <Routes>
+                    <Route index element={<Navigate to="dashboard" replace />} />
+                    <Route path="dashboard" element={<Dashboard />} />
+                    <Route path="products" element={<ProductsManager />} />
+                    <Route path="orders" element={<OrdersManager />} />
+                    <Route path="inventory" element={<InventoryManager />} />
+                    <Route path="coupons" element={<CouponsManager />} />
+                    <Route path="settings" element={<Settings />} />
+                  </Routes>
                 </AdminLayout>
-              )} />
+              } />
 
               {/* Public Routes */}
-              <Route exact path="/"><PublicLayout><Home /></PublicLayout></Route>
-              <Route path="/shop"><PublicLayout><Shop /></PublicLayout></Route>
-              <Route path="/product/:id"><PublicLayout><ProductDetail /></PublicLayout></Route>
-              <Route path="/cart"><PublicLayout><Cart /></PublicLayout></Route>
-              <Route path="/checkout"><PublicLayout><Checkout /></PublicLayout></Route>
-              <Route path="/guide"><PublicLayout><AiGuide /></PublicLayout></Route>
-              <Route path="/about"><PublicLayout><About /></PublicLayout></Route>
-              <Route path="/contact"><PublicLayout><Contact /></PublicLayout></Route>
-              <Route path="/legal"><PublicLayout><Legal /></PublicLayout></Route>
-            </Switch>
+              <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
+              <Route path="/shop" element={<PublicLayout><Shop /></PublicLayout>} />
+              <Route path="/product/:id" element={<PublicLayout><ProductDetail /></PublicLayout>} />
+              <Route path="/cart" element={<PublicLayout><Cart /></PublicLayout>} />
+              <Route path="/checkout" element={<PublicLayout><Checkout /></PublicLayout>} />
+              <Route path="/guide" element={<PublicLayout><AiGuide /></PublicLayout>} />
+              <Route path="/about" element={<PublicLayout><About /></PublicLayout>} />
+              <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
+              <Route path="/legal" element={<PublicLayout><Legal /></PublicLayout>} />
+            </Routes>
             <Toaster 
               position="bottom-right"
               toastOptions={{

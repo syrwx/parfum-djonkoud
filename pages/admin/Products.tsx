@@ -100,34 +100,56 @@ const ProductsManager: React.FC = () => {
             const dataUrl = canvas.toDataURL('image/webp', 0.8);
             resolve(dataUrl);
           } else {
-            reject(new Error("Impossible d'initialiser le canvas"));
+            reject(new Error("Impossible d'initialiser le canvas graphique."));
           }
         };
-        img.onerror = (error) => reject(error);
+        img.onerror = () => reject(new Error("Le fichier image est corrompu ou illisible."));
       };
-      reader.onerror = (error) => reject(error);
+      reader.onerror = () => reject(new Error("Erreur de lecture du fichier par le navigateur."));
     });
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Nouvelle limite frontend : 20 Mo (au lieu de 5 Mo)
-      if (file.size > 20000000) { 
-        toast.error("L'image est trop lourde (> 20MB)");
+    
+    // Réinitialiser l'input pour permettre de sélectionner le même fichier si erreur corrigée
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
+
+    if (!file) return;
+
+    // 1. Validation du type MIME
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+        toast.error(`Format non supporté (${file.type}). Utilisez JPG, PNG ou WebP.`);
         return;
-      }
+    }
+
+    // 2. Validation de la taille (20 Mo Max)
+    const MAX_SIZE_MB = 20;
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) { 
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        toast.error(`Image trop lourde (${fileSizeMB} Mo). Limite : ${MAX_SIZE_MB} Mo.`);
+        return;
+    }
+    
+    const toastId = toast.loading("Optimisation de l'image...");
+    
+    try {
+      // Compression avant de set le state
+      const compressedImage = await compressImage(file);
       
-      const toastId = toast.loading("Optimisation de l'image...");
-      try {
-        // Compression avant de set le state
-        const compressedImage = await compressImage(file);
-        setEditingProduct(prev => ({ ...prev, image: compressedImage }));
-        toast.success("Image chargée et optimisée !", { id: toastId });
-      } catch (error) {
-        console.error(error);
-        toast.error("Erreur lors du traitement de l'image", { id: toastId });
+      if (!compressedImage || compressedImage.length < 50) {
+          throw new Error("L'image générée est vide.");
       }
+
+      setEditingProduct(prev => ({ ...prev, image: compressedImage }));
+      toast.success("Image optimisée et chargée !", { id: toastId });
+    } catch (error: any) {
+      console.error("Erreur upload:", error);
+      const errorMessage = error.message || "Erreur inconnue lors du traitement";
+      toast.error(`Échec : ${errorMessage}`, { id: toastId, duration: 4000 });
     }
   };
 
@@ -265,7 +287,7 @@ const ProductsManager: React.FC = () => {
                           ref={fileInputRef} 
                           onChange={handleFileUpload} 
                           className="hidden" 
-                          accept="image/*"
+                          accept="image/png, image/jpeg, image/webp"
                         />
                         <button 
                           type="button" 
@@ -276,7 +298,7 @@ const ProductsManager: React.FC = () => {
                         </button>
                      </div>
                   </div>
-                  <p className="text-[10px] text-neutral-500">Formats supportés: JPG, PNG, WebP. Optimisation automatique.</p>
+                  <p className="text-[10px] text-neutral-500">Formats supportés: JPG, PNG, WebP. Max 20 Mo. Optimisation automatique.</p>
                 </div>
               </div>
 
