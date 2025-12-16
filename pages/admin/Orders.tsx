@@ -1,11 +1,16 @@
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { OrderStatus } from '../../types';
-import { Eye, Printer } from 'lucide-react';
+import { Eye, Printer, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const OrdersManager: React.FC = () => {
-  const { orders, updateOrderStatus } = useStore();
+  const { orders, updateOrderStatus, refreshOrders } = useStore();
+
+  useEffect(() => {
+    refreshOrders();
+  }, []);
 
   const handleStatusChange = (id: string, status: string) => {
     updateOrderStatus(id, status as OrderStatus);
@@ -24,9 +29,17 @@ const OrdersManager: React.FC = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-serif text-white mb-8">Gestion des Commandes</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-serif text-white">Gestion des Commandes</h1>
+        <button onClick={() => refreshOrders()} className="text-amber-500 hover:text-amber-400 flex items-center gap-2 text-sm uppercase font-bold">
+          <RefreshCw size={16} /> Actualiser
+        </button>
+      </div>
 
       <div className="bg-black border border-amber-900/30 overflow-hidden">
+        {orders.length === 0 ? (
+          <div className="p-8 text-center text-neutral-500">Aucune commande pour le moment.</div>
+        ) : (
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-neutral-900 text-amber-100 text-xs uppercase tracking-widest">
@@ -74,6 +87,7 @@ const OrdersManager: React.FC = () => {
             ))}
           </tbody>
         </table>
+        )}
       </div>
     </div>
   );

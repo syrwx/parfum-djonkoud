@@ -31,15 +31,13 @@ jobs:
             git reset --hard origin/main
             git pull origin main
             
-            # Installer les dépendances (Backend & Frontend)
-            # --legacy-peer-deps évite les blocages sur les versions de paquets
-            npm install --legacy-peer-deps
+            # Installer TOUTES les dépendances (même les outils de build comme Vite)
+            # --production=false est crucial ici
+            npm install --legacy-peer-deps --production=false
             
-            # RECONSTRUIRE LE FRONTEND (C'est cette étape qui met à jour le visuel)
+            # RECONSTRUIRE LE FRONTEND
             npm run build
             
-            # Redémarrer le serveur Backend via PM2 pour prendre en compte les changements
+            # Redémarrer le serveur Backend via PM2
             pm2 restart djonkoud-api || pm2 start server.js --name "djonkoud-api"
-            
-            # Sauvegarder la liste des processus pour le redémarrage auto
             pm2 save

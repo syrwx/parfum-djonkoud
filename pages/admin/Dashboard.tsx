@@ -17,11 +17,13 @@ const StatCard: React.FC<{ title: string; value: string | number; icon: React.Re
 );
 
 const Dashboard: React.FC = () => {
-  const { orders, products } = useStore();
+  const { orders, products, refreshOrders, refreshProducts } = useStore();
   const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking');
 
-  // Vérification de la connexion DB au chargement du dashboard
+  // Vérification de la connexion DB et rafraîchissement des données
   useEffect(() => {
+    refreshOrders();
+    refreshProducts();
     const checkStatus = async () => {
       try {
         const res = await fetch('/api/status');

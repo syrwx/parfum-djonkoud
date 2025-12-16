@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { Product } from '../../types';
 import Button from '../../components/ui/Button';
@@ -7,11 +7,15 @@ import { Edit2, Trash2, Plus, X, Upload, Image as ImageIcon, Loader2 } from 'luc
 import toast from 'react-hot-toast';
 
 const ProductsManager: React.FC = () => {
-  const { products, addProduct, updateProduct, deleteProduct } = useStore();
+  const { products, addProduct, updateProduct, deleteProduct, refreshProducts } = useStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false); // État de chargement du bouton
+  const [isSubmitting, setIsSubmitting] = useState(false); 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    refreshProducts();
+  }, []);
 
   const openModal = (product?: Product) => {
     if (product) {
@@ -54,7 +58,6 @@ const ProductsManager: React.FC = () => {
 
     setIsSubmitting(false);
     
-    // On ferme seulement si l'opération a réussi (confirmé par le serveur)
     if (success) {
       closeModal();
     }
@@ -63,7 +66,6 @@ const ProductsManager: React.FC = () => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Limite augmentée côté client à 5MB pour correspondre au backend
       if (file.size > 5000000) { 
         toast.error("L'image est trop lourde (> 5MB)");
         return;

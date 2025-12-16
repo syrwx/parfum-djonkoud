@@ -1,13 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import ProductCard from '../components/ProductCard';
 import { Search, X, Sparkles } from 'lucide-react';
 
 const Shop: React.FC = () => {
-  const { products } = useStore();
+  const { products, refreshProducts } = useStore();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   
+  // Synchronisation des données à l'arrivée sur la page
+  useEffect(() => {
+    refreshProducts();
+  }, []);
+
   const categories = ['all', ...Array.from(new Set(products.map(p => p.category)))];
 
   // Filtering Logic

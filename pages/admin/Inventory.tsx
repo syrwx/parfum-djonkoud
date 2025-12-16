@@ -1,10 +1,14 @@
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
-import { AlertTriangle, TrendingDown, Layers } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { AlertTriangle, TrendingDown, Layers, RefreshCw } from 'lucide-react';
 
 const InventoryManager: React.FC = () => {
-  const { products, updateStock } = useStore();
+  const { products, updateStock, refreshProducts } = useStore();
+
+  useEffect(() => {
+    refreshProducts();
+  }, []);
 
   const handleStockUpdate = (id: string, val: string) => {
     const num = parseInt(val);
@@ -15,7 +19,12 @@ const InventoryManager: React.FC = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-serif text-white mb-8">Gestion des Stocks</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-serif text-white">Gestion des Stocks</h1>
+        <button onClick={() => refreshProducts()} className="text-amber-500 hover:text-amber-400 flex items-center gap-2 text-sm uppercase font-bold">
+          <RefreshCw size={16} /> Actualiser
+        </button>
+      </div>
 
       <div className="grid md:grid-cols-3 gap-6 mb-8">
          <div className="bg-neutral-900 border border-amber-900/20 p-4 flex items-center gap-4">
