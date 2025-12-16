@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getPerfumeRecommendation, PerfumeRecommendation } from '../services/geminiService';
@@ -81,7 +82,10 @@ const AiGuide: React.FC = () => {
 
                 <div className="flex justify-center gap-3 flex-wrap">
                   {result.ingredients.map((ing, i) => (
-                    <span key={i} className="px-3 py-1 border border-amber-500/30 text-amber-400 text-xs uppercase tracking-wide">
+                    <span 
+                      key={i} 
+                      className="px-4 py-2 rounded-full bg-amber-950/20 border border-amber-500/30 text-amber-200 text-xs font-medium uppercase tracking-widest shadow-lg shadow-amber-900/10"
+                    >
                       {ing}
                     </span>
                   ))}

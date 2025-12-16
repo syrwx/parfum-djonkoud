@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';
 import Logo from '../../components/Logo';
@@ -9,12 +10,12 @@ const AdminLogin: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login } = useAuth();
-  const navigate = useNavigate();
+  const history = useHistory();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(email, password)) {
-      navigate('/admin/dashboard');
+    if (await login(email, password)) {
+      history.push('/admin/dashboard');
     }
   };
 

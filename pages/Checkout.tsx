@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useStore } from '../context/StoreContext';
 import Button from '../components/ui/Button';
 import { CURRENCY } from '../constants';
-import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { CreditCard, MessageCircle, Loader2, Globe, Truck, Sparkles, Users, Ticket, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Coupon } from '../types';
@@ -12,7 +12,7 @@ import { Coupon } from '../types';
 const Checkout: React.FC = () => {
   const { cart, cartTotal, clearCart } = useCart();
   const { contactInfo } = useStore();
-  const navigate = useNavigate();
+  const history = useHistory();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'WAVE' | 'OM' | 'CARD' | null>(null);
   
@@ -204,7 +204,7 @@ const Checkout: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 1000));
         clearCart();
         toast.success("Commande confirmée !");
-        navigate('/');
+        history.push('/');
       } else {
         throw new Error(data.error || "Erreur serveur");
       }

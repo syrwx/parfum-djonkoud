@@ -1,16 +1,16 @@
 
 import React from 'react';
-import { Link, useLocation, Navigate, Outlet } from 'react-router-dom';
+import { Link, useLocation, Redirect } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../Logo';
 import { LayoutDashboard, Package, ShoppingCart, LogOut, Layers, Settings, Ticket } from 'lucide-react';
 
-const AdminLayout: React.FC = () => {
+const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, logout } = useAuth();
   const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" state={{ from: location }} replace />;
+    return <Redirect to={{ pathname: "/admin/login", state: { from: location } }} />;
   }
 
   const navItems = [
@@ -62,7 +62,7 @@ const AdminLayout: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 ml-64 p-8 overflow-y-auto">
-        <Outlet />
+        {children}
       </main>
     </div>
   );

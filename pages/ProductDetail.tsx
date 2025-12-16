@@ -1,10 +1,11 @@
+
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { CURRENCY } from '../constants';
 import Button from '../components/ui/Button';
 import { useCart } from '../context/CartContext';
-import { Star, ShieldCheck, Truck } from 'lucide-react';
+import { Star, ShieldCheck, Truck, Tag } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ProductDetail: React.FC = () => {
@@ -77,10 +78,15 @@ const ProductDetail: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="text-sm uppercase tracking-widest text-neutral-500 mb-3">Notes Olfactives</h3>
-              <div className="flex flex-wrap gap-2">
+              <h3 className="text-sm uppercase tracking-widest text-neutral-500 mb-4 flex items-center gap-2">
+                <Tag size={14} /> Notes Olfactives
+              </h3>
+              <div className="flex flex-wrap gap-3">
                 {product.notes.map((note, idx) => (
-                  <span key={idx} className="px-3 py-1 bg-neutral-900 border border-neutral-800 text-amber-200 text-sm rounded-none">
+                  <span 
+                    key={idx} 
+                    className="px-4 py-2 rounded-full bg-amber-950/20 border border-amber-900/50 text-amber-100 text-xs font-medium uppercase tracking-widest hover:bg-amber-900/40 hover:border-amber-500/50 transition-all duration-300 cursor-default shadow-[0_2px_10px_rgba(0,0,0,0.2)]"
+                  >
                     {note}
                   </span>
                 ))}
