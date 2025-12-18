@@ -48,11 +48,13 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     whatsAppAgents: [{ id: '1', name: 'Service Client', phone: '+223 70 00 00 00', role: 'general', active: true }]
   });
 
+  // Fix: Added wholesaleThreshold property which was missing in the initial state but required by the SiteSettings interface.
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({
     heroTitle: "L'Âme du Mali",
     heroSubtitle: "Mali • Tradition • Luxe",
     heroImage: "https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=2574&auto=format&fit=crop",
     heroSlogan: SLOGANS[0],
+    wholesaleThreshold: 200000,
     paymentMethods: [
       { id: PaymentMethod.WAVE, name: 'Wave / Mobile Money', active: true },
       { id: PaymentMethod.ORANGE_MONEY, name: 'Orange Money', active: true },

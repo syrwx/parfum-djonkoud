@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { useAuth } from '../../context/AuthContext';
-import { ContactInfo, SiteSettings, WhatsAppAgent, PaymentMethodConfig } from '../../types';
+import { ContactInfo, SiteSettings, WhatsAppAgent } from '../../types';
 import Button from '../../components/ui/Button';
-import { Save, MapPin, Mail, Layout, Plus, Trash2, Edit2, CreditCard, DollarSign, Smartphone, Check } from 'lucide-react';
+import { Save, MapPin, Layout, Plus, Trash2, Edit2, CreditCard, DollarSign, Smartphone, Check, Users, Globe, Headphones, Target, MessageCircle, ShieldAlert, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const WhatsAppIcon = ({ size = 20, className = "" }) => (
@@ -15,12 +15,18 @@ const WhatsAppIcon = ({ size = 20, className = "" }) => (
 
 const Settings: React.FC = () => {
   const { contactInfo, updateContactInfo, siteSettings, updateSiteSettings, refreshSettings } = useStore();
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   
-  const [activeTab, setActiveTab] = useState<'contact' | 'whatsapp' | 'appearance' | 'payments'>('contact');
+  const [activeTab, setActiveTab] = useState<'contact' | 'whatsapp' | 'appearance' | 'payments' | 'security'>('contact');
   const [contactData, setContactData] = useState<ContactInfo>(contactInfo);
   const [appearanceData, setAppearanceData] = useState<SiteSettings>(siteSettings);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingAgent, setEditingAgent] = useState<Partial<WhatsAppAgent> | null>(null);
+
+  // Security State
+  const [newEmail, setNewEmail] = useState(user?.email || '');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
     refreshSettings();
@@ -45,6 +51,24 @@ const Settings: React.FC = () => {
     setIsSaving(false);
   };
 
+  const handleSecuritySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword && newPassword !== confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas");
+      return;
+    }
+    setIsSaving(true);
+    const success = await updateProfile(newEmail, newPassword);
+    if (success) {
+      setNewPassword('');
+      setConfirmPassword('');
+      toast.success("Profil administrateur mis à jour");
+    } else {
+      toast.error("Échec de la mise à jour");
+    }
+    setIsSaving(false);
+  };
+
   const togglePaymentMethod = async (id: string) => {
     const updatedMethods = appearanceData.paymentMethods.map(m => 
       m.id === id ? { ...m, active: !m.active } : m
@@ -54,24 +78,12 @@ const Settings: React.FC = () => {
     await updateSiteSettings(updatedSettings);
   };
 
-  const handleContactChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setContactData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleAppearanceChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setAppearanceData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const [editingAgent, setEditingAgent] = useState<Partial<WhatsAppAgent> | null>(null);
-
   const saveAgent = async () => {
     if (!editingAgent || !editingAgent.name || !editingAgent.phone) return;
     let newAgents = [...contactData.whatsAppAgents];
     const existingIndex = newAgents.findIndex(a => a.id === editingAgent.id);
     if (existingIndex >= 0) newAgents[existingIndex] = editingAgent as WhatsAppAgent;
-    else newAgents.push({ ...editingAgent, id: Date.now().toString() } as WhatsAppAgent);
+    else newAgents.push({ ...editingAgent, id: Date.now().toString(), active: true } as WhatsAppAgent);
 
     const newInfo = { ...contactData, whatsAppAgents: newAgents };
     setContactData(newInfo);
@@ -86,13 +98,12 @@ const Settings: React.FC = () => {
     await updateContactInfo(newInfo);
   };
 
-  const getPaymentIcon = (id: string) => {
-    switch (id) {
-      case 'WAVE': return <Smartphone className="text-blue-500" />;
-      case 'ORANGE_MONEY': return <Smartphone className="text-orange-500" />;
-      case 'CARD': return <CreditCard className="text-amber-500" />;
-      case 'CASH': return <DollarSign className="text-green-500" />;
-      default: return <Check />;
+  const getAgentRoleIcon = (role: string) => {
+    switch (role) {
+      case 'wholesale': return <Users size={16} />;
+      case 'export': return <Globe size={16} />;
+      case 'retail': return <Target size={16} />;
+      default: return <Headphones size={16} />;
     }
   };
 
@@ -100,14 +111,15 @@ const Settings: React.FC = () => {
     <div className="max-w-4xl mx-auto pb-20">
       <div className="mb-8 border-b border-amber-900/30 pb-6">
         <h1 className="text-3xl font-serif text-white">Paramètres Généraux</h1>
-        <p className="text-neutral-400 mt-2">Pilotez l'identité de votre marque en temps réel.</p>
+        <p className="text-neutral-400 mt-2">Pilotez votre marque en temps réel.</p>
       </div>
 
       <div className="flex space-x-2 mb-8 overflow-x-auto pb-2">
-        <button onClick={() => setActiveTab('contact')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap ${activeTab === 'contact' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-neutral-400'}`}>Info Base</button>
-        <button onClick={() => setActiveTab('whatsapp')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap flex items-center gap-2 ${activeTab === 'whatsapp' ? 'bg-green-700 text-white' : 'bg-neutral-900 text-green-500'}`}><WhatsAppIcon size={16}/> WhatsApp</button>
+        <button onClick={() => setActiveTab('contact')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap ${activeTab === 'contact' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-neutral-400'}`}>Base</button>
+        <button onClick={() => setActiveTab('whatsapp')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap flex items-center gap-2 ${activeTab === 'whatsapp' ? 'bg-green-700 text-white' : 'bg-neutral-900 text-green-500'}`}><WhatsAppIcon size={16}/> Équipe WhatsApp</button>
         <button onClick={() => setActiveTab('payments')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap flex items-center gap-2 ${activeTab === 'payments' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-amber-400'}`}><CreditCard size={16}/> Paiements</button>
-        <button onClick={() => setActiveTab('appearance')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap ${activeTab === 'appearance' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-neutral-400'}`}>Design Site</button>
+        <button onClick={() => setActiveTab('appearance')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap ${activeTab === 'appearance' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-neutral-400'}`}>Design</button>
+        <button onClick={() => setActiveTab('security')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap flex items-center gap-2 ${activeTab === 'security' ? 'bg-red-700 text-white' : 'bg-neutral-900 text-red-500'}`}><ShieldAlert size={16}/> Sécurité</button>
       </div>
 
       {activeTab === 'contact' && (
@@ -116,20 +128,62 @@ const Settings: React.FC = () => {
             <h2 className="text-lg font-serif text-amber-100 mb-6 flex items-center gap-2"><MapPin size={18} className="text-amber-500" /> Coordonnées</h2>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
-                <label className="block text-amber-100 text-xs uppercase mb-2">Adresse</label>
-                <input type="text" name="address" value={contactData.address} onChange={handleContactChange} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" />
+                <label className="block text-amber-100 text-[10px] uppercase mb-2">Adresse</label>
+                <input type="text" name="address" value={contactData.address} onChange={e => setContactData({...contactData, address: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" />
               </div>
               <div>
-                <label className="block text-amber-100 text-xs uppercase mb-2">Téléphone Principal</label>
-                <input type="text" name="phone" value={contactData.phone} onChange={handleContactChange} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none font-mono" />
+                <label className="block text-amber-100 text-[10px] uppercase mb-2">Téléphone principal</label>
+                <input type="text" name="phone" value={contactData.phone} onChange={e => setContactData({...contactData, phone: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none font-mono" />
               </div>
               <div>
-                <label className="block text-amber-100 text-xs uppercase mb-2">Email</label>
-                <input type="email" name="email" value={contactData.email} onChange={handleContactChange} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" />
+                <label className="block text-amber-100 text-[10px] uppercase mb-2">Email public</label>
+                <input type="email" name="email" value={contactData.email} onChange={e => setContactData({...contactData, email: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" />
               </div>
             </div>
           </div>
-          <div className="flex justify-end"><Button type="submit" disabled={isSaving}><Save size={18} /> Sauvegarder Contact</Button></div>
+          <div className="flex justify-end"><Button type="submit" disabled={isSaving}><Save size={18} /> Sauvegarder</Button></div>
+        </form>
+      )}
+
+      {activeTab === 'security' && (
+        <form onSubmit={handleSecuritySubmit} className="space-y-8 animate-fade-in">
+          <div className="bg-black border border-red-900/30 p-6">
+            <h2 className="text-lg font-serif text-red-500 mb-6 flex items-center gap-2"><Lock size={18} /> Accès Administration</h2>
+            <div className="grid gap-6">
+              <div>
+                <label className="block text-amber-100 text-[10px] uppercase mb-2">Email Administrateur</label>
+                <input 
+                  type="email" 
+                  value={newEmail} 
+                  onChange={e => setNewEmail(e.target.value)} 
+                  className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" 
+                />
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-amber-100 text-[10px] uppercase mb-2">Nouveau mot de passe</label>
+                  <input 
+                    type="password" 
+                    value={newPassword} 
+                    onChange={e => setNewPassword(e.target.value)} 
+                    placeholder="Laisser vide pour ne pas changer"
+                    className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-amber-100 text-[10px] uppercase mb-2">Confirmer le mot de passe</label>
+                  <input 
+                    type="password" 
+                    value={confirmPassword} 
+                    onChange={e => setConfirmPassword(e.target.value)} 
+                    placeholder="Répéter le mot de passe"
+                    className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end"><Button type="submit" disabled={isSaving} className="bg-red-600 hover:bg-red-500"><Save size={18} /> Appliquer les changements</Button></div>
         </form>
       )}
 
@@ -137,80 +191,105 @@ const Settings: React.FC = () => {
         <div className="animate-fade-in space-y-6">
           <div className="bg-neutral-900 border border-green-900/50 p-6">
              <div className="flex justify-between items-center mb-6">
-               <h2 className="text-xl font-serif text-green-400 flex items-center gap-2"><WhatsAppIcon size={24} /> Équipe WhatsApp</h2>
-               <Button onClick={() => setEditingAgent({ name: '', phone: '', role: 'general' })} variant="outline" className="border-green-600 text-green-400"><Plus size={18} /> Ajouter</Button>
+               <h2 className="text-xl font-serif text-green-400 flex items-center gap-2"><WhatsAppIcon size={24} /> Routage Intelligent</h2>
+               <Button onClick={() => setEditingAgent({ name: '', phone: '', role: 'retail' })} variant="outline" className="border-green-600 text-green-400"><Plus size={18} /> Ajouter un expert</Button>
              </div>
-             <div className="space-y-3">
+             
+             <div className="space-y-4">
                {contactData.whatsAppAgents.map(agent => (
-                 <div key={agent.id} className="bg-black border border-neutral-800 p-4 flex items-center justify-between group">
-                    <div className="flex items-center gap-4">
-                      <WhatsAppIcon size={20} className="text-green-500"/>
+                 <div key={agent.id} className="bg-black border border-neutral-800 p-5 flex items-center justify-between group hover:border-green-800 transition-colors">
+                    <div className="flex items-center gap-5">
+                      <div className="w-12 h-12 bg-green-900/20 flex items-center justify-center text-green-500 border border-green-900/50">
+                        {getAgentRoleIcon(agent.role)}
+                      </div>
                       <div>
-                        <div className="flex items-center gap-2"><span className="font-bold text-white">{agent.name}</span><span className="text-[10px] uppercase bg-neutral-800 text-neutral-400 px-2">{agent.role}</span></div>
-                        <p className="text-green-600 font-mono text-sm">{agent.phone}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white text-lg">{agent.name}</span>
+                          <span className={`text-[10px] uppercase px-2 py-0.5 font-bold tracking-tighter ${
+                            agent.role === 'wholesale' ? 'bg-amber-600 text-black' : 
+                            agent.role === 'export' ? 'bg-blue-600 text-white' : 'bg-neutral-800 text-neutral-400'
+                          }`}>
+                            {agent.role === 'wholesale' ? 'GROSSISTE' : agent.role === 'export' ? 'EXPORT' : 'RETAIL'}
+                          </span>
+                        </div>
+                        <p className="text-green-600 font-mono text-sm mt-1">{agent.phone}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setEditingAgent(agent)} className="p-2 text-neutral-400 hover:text-white"><Edit2 size={16} /></button>
-                      <button onClick={() => deleteAgent(agent.id)} className="p-2 text-neutral-400 hover:text-red-500"><Trash2 size={16} /></button>
+                      <button onClick={() => setEditingAgent(agent)} className="p-2 text-neutral-400 hover:text-white transition-colors"><Edit2 size={18} /></button>
+                      <button onClick={() => deleteAgent(agent.id)} className="p-2 text-neutral-400 hover:text-red-500 transition-colors"><Trash2 size={18} /></button>
                     </div>
                  </div>
                ))}
              </div>
           </div>
+          
+          {editingAgent && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90">
+              <div className="bg-neutral-900 border border-green-700/50 p-8 w-full max-w-md shadow-2xl">
+                 <h3 className="text-xl font-serif text-green-400 mb-6">Configuration de l'expert</h3>
+                 <div className="space-y-4">
+                   <div>
+                     <label className="block text-[10px] uppercase text-neutral-500 mb-2">Nom / Titre</label>
+                     <input type="text" value={editingAgent.name || ''} onChange={e => setEditingAgent({...editingAgent, name: e.target.value})} className="w-full bg-black border border-neutral-700 p-3 text-white outline-none" placeholder="Ex: M. Traoré - Grossiste" />
+                   </div>
+                   <div>
+                     <label className="block text-[10px] uppercase text-neutral-500 mb-2">Numéro WhatsApp</label>
+                     <input type="text" value={editingAgent.phone || ''} onChange={e => setEditingAgent({...editingAgent, phone: e.target.value})} className="w-full bg-black border border-neutral-700 p-3 text-white outline-none" placeholder="+223 ..." />
+                   </div>
+                   <div>
+                     <label className="block text-[10px] uppercase text-neutral-500 mb-2">Rôle / Cible</label>
+                     <select value={editingAgent.role || 'retail'} onChange={e => setEditingAgent({...editingAgent, role: e.target.value as any})} className="w-full bg-black border border-neutral-700 p-3 text-white outline-none">
+                       <option value="retail">Détaillant / Particulier</option>
+                       <option value="wholesale">Grossiste (Panier élevé)</option>
+                       <option value="export">Exportation (International)</option>
+                       <option value="general">Général / Support</option>
+                     </select>
+                   </div>
+                   <div className="pt-6 flex gap-4">
+                     <button onClick={() => setEditingAgent(null)} className="flex-1 py-3 text-neutral-400 hover:text-white">Annuler</button>
+                     <Button onClick={saveAgent} fullWidth>Enregistrer l'agent</Button>
+                   </div>
+                 </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {activeTab === 'payments' && (
         <div className="animate-fade-in space-y-6">
            <div className="bg-black border border-amber-900/30 p-6">
-            <h2 className="text-lg font-serif text-amber-100 mb-6 flex items-center gap-2"><CreditCard size={18} className="text-amber-500" /> Modes de Paiement</h2>
-            <p className="text-neutral-400 text-sm mb-8 italic">Activez ou désactivez les options de paiement visibles par vos clients lors du checkout.</p>
-            
-            <div className="space-y-4">
+            <h2 className="text-lg font-serif text-amber-100 mb-6 flex items-center gap-2"><CreditCard size={18} className="text-amber-500" /> Options de Paiement</h2>
+            <div className="bg-neutral-900/50 p-4 border border-amber-900/10 mb-8">
+               <label className="block text-[10px] uppercase text-amber-600 font-bold mb-2">Seuil Grossiste (FCFA)</label>
+               <input 
+                 type="number" 
+                 value={appearanceData.wholesaleThreshold || 200000} 
+                 onChange={e => setAppearanceData({...appearanceData, wholesaleThreshold: parseInt(e.target.value)})} 
+                 className="w-full bg-black border border-neutral-800 p-3 text-white focus:border-amber-500 outline-none font-mono" 
+               />
+            </div>
+            <div className="space-y-3">
               {appearanceData.paymentMethods.map(method => (
                 <div key={method.id} className="flex items-center justify-between p-4 bg-neutral-900 border border-neutral-800 group hover:border-amber-900/50 transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className="p-2 bg-black border border-neutral-800">
-                      {getPaymentIcon(method.id)}
+                    <div className="p-2 bg-black border border-neutral-800 text-amber-600">
+                      {method.id === 'WHATSAPP' ? <MessageCircle size={20}/> : method.id === 'CARD' ? <CreditCard size={20}/> : <Smartphone size={20}/>}
                     </div>
-                    <div>
-                      <h4 className="font-bold text-white tracking-wide">{method.name}</h4>
-                      <p className="text-[10px] text-neutral-500 uppercase tracking-tighter">ID Système: {method.id}</p>
-                    </div>
+                    <span className="font-bold text-white">{method.name}</span>
                   </div>
-                  
                   <button 
                     onClick={() => togglePaymentMethod(method.id)}
-                    className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${method.active ? 'bg-amber-600' : 'bg-neutral-800'}`}
+                    className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${method.active ? 'bg-amber-600' : 'bg-neutral-800'}`}
                   >
-                    <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${method.active ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                    <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ${method.active ? 'translate-x-6' : 'translate-x-0'}`}></div>
                   </button>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      )}
-
-      {activeTab === 'appearance' && (
-        <form onSubmit={handleAppearanceSubmit} className="space-y-8 animate-fade-in">
-           <div className="bg-black border border-amber-900/30 p-6">
-            <h2 className="text-lg font-serif text-amber-100 mb-6 flex items-center gap-2"><Layout size={18} className="text-amber-500" /> Page d'Accueil</h2>
-            <div className="space-y-6">
-              <div><label className="block text-amber-100 text-xs uppercase mb-2">Titre Principal</label><input type="text" name="heroTitle" value={appearanceData.heroTitle} onChange={handleAppearanceChange} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none font-serif text-lg" /></div>
-              <div><label className="block text-amber-100 text-xs uppercase mb-2">Slogan</label><textarea name="heroSlogan" value={appearanceData.heroSlogan} onChange={handleAppearanceChange} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none h-24" /></div>
-              <div>
-                <label className="block text-amber-100 text-xs uppercase mb-2">Image de Fond (URL)</label>
-                <div className="flex gap-4">
-                  <input type="text" name="heroImage" value={appearanceData.heroImage} onChange={handleAppearanceChange} className="flex-1 bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" />
-                  <img src={appearanceData.heroImage} className="w-12 h-12 object-cover border border-neutral-800" />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-end"><Button type="submit" disabled={isSaving}><Save size={18} /> Sauvegarder Design</Button></div>
-        </form>
       )}
     </div>
   );

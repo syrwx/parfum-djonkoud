@@ -30,7 +30,8 @@ export enum PaymentMethod {
   WAVE = 'WAVE',
   ORANGE_MONEY = 'ORANGE_MONEY',
   CARD = 'CARD',
-  CASH = 'CASH'
+  CASH = 'CASH',
+  WHATSAPP = 'WHATSAPP'
 }
 
 export interface PaymentMethodConfig {
@@ -59,9 +60,9 @@ export interface Order {
 
 export interface WhatsAppAgent {
   id: string;
-  name: string; // ex: "Service Commercial", "Service Export"
+  name: string; 
   phone: string;
-  role: 'general' | 'export' | 'wholesale' | 'support';
+  role: 'retail' | 'export' | 'wholesale' | 'general';
   active: boolean;
 }
 
@@ -81,7 +82,8 @@ export interface SiteSettings {
   heroSubtitle: string;
   heroImage: string;
   heroSlogan: string;
-  paymentMethods: PaymentMethodConfig[]; // Nouveau champ pour les paiements
+  paymentMethods: PaymentMethodConfig[];
+  wholesaleThreshold: number; // Nouveau : seuil pour basculer en mode grossiste
 }
 
 export interface Coupon {

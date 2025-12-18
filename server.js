@@ -109,6 +109,7 @@ const SettingsSchema = new mongoose.Schema({
         heroSubtitle: String,
         heroImage: String,
         heroSlogan: String,
+        wholesaleThreshold: Number,
         paymentMethods: [
           {
             id: String,
@@ -131,18 +132,24 @@ async function seedSettings() {
                     phone: "+223 70 00 00 00",
                     email: "contact@djonkoud.ml",
                     hours: "Lun - Sam : 09h00 - 19h00",
-                    whatsAppAgents: [{ id: '1', name: 'Service Client', phone: '+223 70 00 00 00', role: 'general', active: true }]
+                    whatsAppAgents: [
+                      { id: '1', name: 'Service Boutique', phone: '+223 70 00 00 00', role: 'retail', active: true },
+                      { id: '2', name: 'Service Grossiste', phone: '+223 70 00 00 01', role: 'wholesale', active: true },
+                      { id: '3', name: 'Service Exportation', phone: '+223 70 00 00 02', role: 'export', active: true }
+                    ]
                 },
                 siteSettings: {
                     heroTitle: "L'Âme du Mali",
                     heroSubtitle: "Mali • Tradition • Luxe",
                     heroImage: "https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=2574&auto=format&fit=crop",
                     heroSlogan: "L'essence du Mali, l'âme du luxe.",
+                    wholesaleThreshold: 200000,
                     paymentMethods: [
                       { id: 'WAVE', name: 'Wave / Mobile Money', active: true },
                       { id: 'ORANGE_MONEY', name: 'Orange Money', active: true },
                       { id: 'CARD', name: 'Carte Bancaire / VISA', active: true },
-                      { id: 'CASH', name: 'Paiement à la livraison', active: true }
+                      { id: 'CASH', name: 'Paiement à la livraison', active: true },
+                      { id: 'WHATSAPP', name: 'Conseiller Privé WhatsApp', active: true }
                     ]
                 }
             });
@@ -194,6 +201,19 @@ app.post('/api/auth/login', async (req, res) => {
         if (user) res.json({ success: true, user: { email: user.email, name: 'Admin' } });
         else res.status(401).json({ success: false });
     } catch (e) { res.status(500).json({ error: "Erreur" }); }
+});
+
+app.put('/api/auth/update', async (req, res) => {
+    try {
+        const { currentEmail, newEmail, newPassword } = req.body;
+        const updateData = {};
+        if (newEmail) updateData.email = newEmail;
+        if (newPassword) updateData.password = newPassword;
+
+        const updated = await Admin.findOneAndUpdate({ email: currentEmail }, updateData, { new: true });
+        if (updated) res.json({ success: true, user: { email: updated.email, name: 'Admin' } });
+        else res.status(404).json({ success: false, message: "Admin non trouvé" });
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/products', async (req, res) => {
