@@ -9,6 +9,7 @@ import { CreditCard, MessageCircle, Loader2, Globe, Truck, Sparkles, Users, Tick
 import toast from 'react-hot-toast';
 import { Coupon } from '../types';
 
+// This component handles the final steps of the purchase process, including shipping address and payment method.
 const Checkout: React.FC = () => {
   const { cart, cartTotal, clearCart } = useCart();
   const { contactInfo } = useStore();
@@ -339,10 +340,58 @@ const Checkout: React.FC = () => {
              
              {/* International Logic UI */}
              {isInternational ? (
-               // INTERNATIONAL UI
                <div className="space-y-4">
                  <div className="p-4 bg-gradient-to-r from-amber-900/40 to-black border border-amber-500/50 rounded animate-fade-in">
                     <h3 className="text-amber-400 font-bold flex items-center gap-2 mb-2">
                       <Sparkles size={18} /> Service Export VIP
                     </h3>
-                    <p className="text-sm
+                    <p className="text-sm text-amber-200/70">
+                      Votre commande est internationale. Un agent dédié ({activeAgent?.name}) traitera votre demande personnellement pour assurer une expédition sécurisée.
+                    </p>
+                 </div>
+                 
+                 <Button 
+                   fullWidth 
+                   onClick={handleWhatsAppCheckout}
+                   className="bg-green-600 hover:bg-green-500 text-white border-none py-4"
+                 >
+                   <MessageCircle size={20} /> Finaliser via WhatsApp
+                 </Button>
+               </div>
+             ) : (
+               <div className="space-y-4">
+                 <div className="flex flex-col gap-3">
+                    <button 
+                      onClick={() => setPaymentMethod('WAVE')}
+                      className={`flex items-center justify-between p-4 border transition-all ${paymentMethod === 'WAVE' ? 'border-amber-500 bg-amber-900/20' : 'border-neutral-800 bg-black'}`}
+                    >
+                      <span className="font-bold text-white">WAVE / Mobile Money</span>
+                      <Check size={20} className={paymentMethod === 'WAVE' ? 'text-amber-500' : 'text-transparent'} />
+                    </button>
+                    <button 
+                      onClick={() => setPaymentMethod('CARD')}
+                      className={`flex items-center justify-between p-4 border transition-all ${paymentMethod === 'CARD' ? 'border-amber-500 bg-amber-900/20' : 'border-neutral-800 bg-black'}`}
+                    >
+                      <span className="font-bold text-white">Carte Bancaire / VISA</span>
+                      <CreditCard size={20} className={paymentMethod === 'CARD' ? 'text-amber-500' : 'text-transparent'} />
+                    </button>
+                 </div>
+                 
+                 <Button 
+                   fullWidth 
+                   onClick={handlePayment}
+                   disabled={loading || !paymentMethod}
+                   className="py-4"
+                 >
+                   {loading ? <Loader2 size={20} className="animate-spin" /> : 'Confirmer la Commande'}
+                 </Button>
+               </div>
+             )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Checkout;

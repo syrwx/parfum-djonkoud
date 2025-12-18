@@ -1,8 +1,5 @@
-import { GoogleGenAI, Type } from "@google/genai";
 
-// Note: In a real deployment, this key comes from process.env.
-// For this frontend-only generation, we assume the environment is set up.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+import { GoogleGenAI, Type } from "@google/genai";
 
 export interface PerfumeRecommendation {
   suggestion: string;
@@ -10,7 +7,13 @@ export interface PerfumeRecommendation {
   ingredients: string[];
 }
 
+/**
+ * Generates a perfume recommendation based on mood and occasion using Gemini.
+ */
 export const getPerfumeRecommendation = async (mood: string, occasion: string): Promise<PerfumeRecommendation> => {
+  // CRITICAL: Initialize GoogleGenAI inside the function to ensure the most recent API key from process.env is used.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
   if (!process.env.API_KEY) {
     console.warn("API Key is missing for Gemini");
     return {
@@ -31,7 +34,8 @@ export const getPerfumeRecommendation = async (mood: string, occasion: string): 
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      // Using 'gemini-3-flash-preview' for basic text tasks according to guidelines.
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -49,6 +53,7 @@ export const getPerfumeRecommendation = async (mood: string, occasion: string): 
       }
     });
 
+    // Directly access the .text property from GenerateContentResponse.
     const text = response.text;
     if (!text) throw new Error("No response from AI");
     

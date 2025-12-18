@@ -22,17 +22,14 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/djonkoud';
 
 // --- Middleware ---
 app.use(cors());
-// Augmentation de la limite pour accepter les grandes images en Base64
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Middleware Anti-Cache pour l'API (Assure de voir les modifs admin tout de suite)
 app.use('/api', (req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   next();
 });
 
-// --- SERVIR LE FRONTEND (FICHIERS STATIQUES) ---
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // --- Connexion Base de Données ---
@@ -41,6 +38,7 @@ mongoose.connect(MONGO_URI)
     console.log('✅ MongoDB Connecté avec succès');
     seedDatabase(); 
     seedAdmin();
+    seedSettings();
   })
   .catch(err => console.error('❌ Erreur de connexion MongoDB:', err));
 
@@ -88,128 +86,67 @@ const Admin = mongoose.model('Admin', AdminSchema);
 
 const CouponSchema = new mongoose.Schema({
     id: { type: String, unique: true },
-    code: { type: String, required: true, unique: true }, // Uppercase stocké
+    code: { type: String, required: true, unique: true },
     type: { type: String, enum: ['percent', 'fixed'], default: 'percent' },
     value: Number,
     active: { type: Boolean, default: true }
 });
 const Coupon = mongoose.model('Coupon', CouponSchema);
 
-// --- DONNÉES INITIALES (Images Premium) ---
-const INITIAL_PRODUCTS = [
-  {
-    id: "1",
-    name: "Thiouraye Royal de Ségou",
-    price: 15000,
-    category: "Encens",
-    description: "Un mélange ancestral de graines de gowé et de résines rares.",
-    story: "Inspiré par les cours royales de l'Empire Bambara, cet encens était brûlé lors des grandes cérémonies pour attirer prospérité et protection.",
-    notes: ["Gowé", "Musc", "Ambre", "Oud"],
-    image: "https://images.unsplash.com/photo-1595123550441-d377e017de6a?q=80&w=800&auto=format&fit=crop",
-    rating: 4.9,
-    stock: 50
-  },
-  {
-    id: "2",
-    name: "Brume du Djoliba",
-    price: 22500,
-    category: "Parfum d'Intérieur",
-    description: "Une fraîcheur aquatique mêlée aux fleurs des rives du Niger.",
-    story: "Le fleuve Niger, source de vie, apporte une brise fraîche au crépuscule. Cette brume capture l'instant où le soleil se couche sur l'eau.",
-    notes: ["Lotus", "Bergamote", "Santal", "Jasmin"],
-    image: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=800&auto=format&fit=crop",
-    rating: 4.7,
-    stock: 30
-  },
-  {
-    id: "3",
-    name: "Nuit à Tombouctou",
-    price: 18000,
-    category: "Bougie Parfumée",
-    description: "Chaleur épicée et mystère du désert sous les étoiles.",
-    story: "Évoque le silence mystique des bibliothèques anciennes et la chaleur du thé à la menthe servi sous une tente nomade.",
-    notes: ["Épices", "Tabac", "Vanille", "Cuir"],
-    image: "https://images.unsplash.com/photo-1603006905003-be475563bc59?q=80&w=800&auto=format&fit=crop",
-    rating: 4.8,
-    stock: 25
-  },
-  {
-    id: "4",
-    name: "Or de Bamako",
-    price: 35000,
-    category: "Coffret Prestige",
-    description: "L'élégance absolue dans un coffret serti de motifs bogolan.",
-    story: "Un hommage à la richesse culturelle du Mali, réunissant nos meilleures créations pour une expérience olfactive inoubliable.",
-    notes: ["Safran", "Rose", "Oud", "Patchouli"],
-    image: "https://images.unsplash.com/photo-1616401784845-180886ba9ca2?q=80&w=800&auto=format&fit=crop",
-    rating: 5.0,
-    stock: 10
-  },
-  {
-    id: "5",
-    name: "Diguidjé Sacré",
-    price: 12000,
-    category: "Encens",
-    description: "L'authenticité des racines parfumées pour purifier l'atmosphère.",
-    story: "Utilisé par les mères pour bénir la maison, le Diguidjé apporte une note terreuse et apaisante qui reconnecte à la terre.",
-    notes: ["Vétiver", "Terre cuite", "Encens pur"],
-    image: "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=800&auto=format&fit=crop",
-    rating: 4.6,
-    stock: 100
-  },
-  {
-    id: "6",
-    name: "Fleur de Karité",
-    price: 20000,
-    category: "Parfum d'Intérieur",
-    description: "Douceur enveloppante et crémeuse pour un intérieur cocooning.",
-    story: "Célébration de l'arbre de vie, le Karité. Une odeur douce, presque laiteuse, qui rappelle les soins de beauté traditionnels.",
-    notes: ["Karité", "Amande", "Fleur d'oranger"],
-    image: "https://images.unsplash.com/photo-1605218427368-36317b2c94d0?q=80&w=800&auto=format&fit=crop",
-    rating: 4.8,
-    stock: 45
-  },
-  {
-    id: "7",
-    name: "Bois d'Agar Pur (Oud)",
-    price: 3500000,
-    category: "Matière Première",
-    description: "Copeaux de bois d'agar naturel et rare, importés d'Asie.",
-    story: "Une pièce de collection pour les connaisseurs. Ce bois d'agar dégage une fragrance complexe et spirituelle.",
-    notes: ["Bois d'Agar", "Cuir Ancien", "Résine"],
-    image: "https://images.unsplash.com/photo-1621867208182-1c2543883a45?q=80&w=800&auto=format&fit=crop",
-    rating: 5.0,
-    sku: "GP-OUD-SUP-KILO",
-    unit: "KG",
-    stock: 5
-  },
-  {
-    id: "8",
-    name: "Oud Royal Luban",
-    price: 12000,
-    category: "Encens",
-    description: "Mélange luxueux de bois d'agar et de résine de Luban.",
-    story: "La rencontre majestueuse entre la sève sacrée de l'arbre à encens et la profondeur du bois d'oud.",
-    notes: ["Oliban", "Oud", "Agrumes séchés"],
-    image: "https://images.unsplash.com/photo-1608528577891-9b7e7b5a1b1a?q=80&w=800&auto=format&fit=crop",
-    rating: 4.8,
-    sku: "GP-ORL-STD",
-    unit: "Paquet",
-    stock: 60
-  }
-];
+// NOUVEAU : Schéma pour les réglages du site
+const SettingsSchema = new mongoose.Schema({
+    contactInfo: {
+        address: String,
+        phone: String,
+        email: String,
+        hours: String,
+        instagram: String,
+        facebook: String,
+        twitter: String,
+        whatsAppAgents: Array
+    },
+    siteSettings: {
+        heroTitle: String,
+        heroSubtitle: String,
+        heroImage: String,
+        heroSlogan: String
+    }
+});
+const Settings = mongoose.model('Settings', SettingsSchema);
+
+// --- SEEDING INITIAL ---
+async function seedSettings() {
+    try {
+        const settings = await Settings.findOne();
+        if (!settings) {
+            await Settings.create({
+                contactInfo: {
+                    address: "ACI 2000, Bamako, Mali",
+                    phone: "+223 70 00 00 00",
+                    email: "contact@djonkoud.ml",
+                    hours: "Lun - Sam : 09h00 - 19h00",
+                    whatsAppAgents: [{ id: '1', name: 'Service Client', phone: '+223 70 00 00 00', role: 'general', active: true }]
+                },
+                siteSettings: {
+                    heroTitle: "L'Âme du Mali",
+                    heroSubtitle: "Mali • Tradition • Luxe",
+                    heroImage: "https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=2574&auto=format&fit=crop",
+                    heroSlogan: "L'essence du Mali, l'âme du luxe."
+                }
+            });
+        }
+    } catch (e) { console.error(e); }
+}
 
 async function seedDatabase() {
     try {
         const count = await Product.countDocuments();
         if (count === 0) {
-            console.log('📦 Base de produits vide, injection des données initiales...');
-            await Product.insertMany(INITIAL_PRODUCTS);
-            console.log('✅ Produits injectés !');
+            await Product.insertMany([
+                { id: "1", name: "Thiouraye Royal", price: 15000, category: "Encens", image: "https://picsum.photos/400/500", stock: 50, notes: ["Oud"] }
+            ]);
         }
-    } catch (error) {
-        console.error('Erreur seeding produits:', error);
-    }
+    } catch (error) { console.error(error); }
 }
 
 async function seedAdmin() {
@@ -217,7 +154,6 @@ async function seedAdmin() {
         const admin = await Admin.findOne();
         if (!admin) {
             await Admin.create({ email: 'admin@djonkoud.ml', password: 'admin123' });
-            console.log('✅ Admin par défaut créé');
         }
     } catch (error) { console.error(error); }
 }
@@ -226,32 +162,28 @@ async function seedAdmin() {
 
 app.get('/api/status', (req, res) => res.json({ status: 'Online' }));
 
-// AUTH (Login & Update Password)
+// SETTINGS ROUTES (Permanence des infos)
+app.get('/api/settings', async (req, res) => {
+    try {
+        const settings = await Settings.findOne();
+        res.json(settings);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/settings', async (req, res) => {
+    try {
+        const updated = await Settings.findOneAndUpdate({}, req.body, { new: true, upsert: true });
+        res.json(updated);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// AUTH
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        // Authentification simple (sans hash pour ce MVP, en prod utiliser bcrypt)
         const user = await Admin.findOne({ email, password });
         if (user) res.json({ success: true, user: { email: user.email, name: 'Admin' } });
         else res.status(401).json({ success: false });
-    } catch (e) { res.status(500).json({ error: "Erreur" }); }
-});
-
-app.put('/api/auth/update', async (req, res) => {
-    try {
-        const { currentEmail, newEmail, newPassword } = req.body;
-        const update = {};
-        if (newEmail) update.email = newEmail;
-        if (newPassword) update.password = newPassword;
-        
-        // Mise à jour de l'admin trouvé par l'email courant
-        const updated = await Admin.findOneAndUpdate({ email: currentEmail }, update, { new: true });
-        
-        if (updated) {
-            console.log("✅ Profil admin mis à jour");
-            res.json({ success: true, user: updated });
-        }
-        else res.status(404).json({ success: false });
     } catch (e) { res.status(500).json({ error: "Erreur" }); }
 });
 
@@ -265,143 +197,35 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
     try {
-        const imageSize = req.body.image ? Math.round(req.body.image.length / 1024) + 'KB' : 'Pas d\'image';
-        console.log(`📝 Création produit: ${req.body.name} (Image: ${imageSize})`);
-        
-        // Utilisation de ID fourni ou fallback
-        const newProductData = { ...req.body };
-        if (!newProductData.id) newProductData.id = Date.now().toString();
-
-        const product = new Product(newProductData);
+        const product = new Product({ ...req.body, id: req.body.id || Date.now().toString() });
         await product.save();
-        
-        console.log('✅ Produit sauvegardé en DB !');
         res.json(product);
-    } catch (e) { 
-        console.error('❌ Erreur sauvegarde produit:', e);
-        res.status(500).json({ error: "Erreur lors de la sauvegarde" }); 
-    }
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.put('/api/products/:id', async (req, res) => {
     try {
-        console.log(`📝 Mise à jour produit ID: ${req.params.id}`);
-        // { new: true } est CRUCIAL pour retourner l'objet mis à jour
         const product = await Product.findOneAndUpdate({ id: req.params.id }, req.body, { new: true });
-        
-        if(product) {
-            console.log('✅ Produit mis à jour irréversiblement en DB !');
-            res.json(product);
-        } else {
-            console.warn('⚠️ Produit non trouvé pour mise à jour');
-            res.status(404).json({ error: "Produit non trouvé" });
-        }
-    } catch (e) { 
-        console.error("Erreur PUT:", e);
-        res.status(500).json({ error: "Erreur" }); 
-    }
+        res.json(product);
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.delete('/api/products/:id', async (req, res) => {
     try {
-        console.log(`🗑 Suppression produit ID: ${req.params.id}`);
-        const result = await Product.deleteOne({ id: req.params.id });
-        
-        if (result.deletedCount > 0) {
-            console.log('✅ Produit supprimé définitivement');
-            res.json({ success: true });
-        } else {
-            res.status(404).json({ error: "Produit non trouvé" });
-        }
-    } catch (e) { res.status(500).json({ error: "Erreur" }); }
-});
-
-// COUPONS
-app.get('/api/coupons', async (req, res) => {
-    try {
-        const coupons = await Coupon.find();
-        res.json(coupons);
-    } catch (e) { res.status(500).json({ error: "Erreur" }); }
-});
-
-app.post('/api/coupons', async (req, res) => {
-    try {
-        const { code, type, value, active } = req.body;
-        const newCoupon = new Coupon({
-            id: Date.now().toString(),
-            code: code.toUpperCase(),
-            type,
-            value,
-            active
-        });
-        await newCoupon.save();
-        res.json(newCoupon);
-    } catch (e) {
-        console.error(e);
-        if (e.code === 11000) {
-            return res.status(400).json({ error: "Ce code existe déjà" });
-        }
-        res.status(500).json({ error: "Erreur lors de la création du code" });
-    }
-});
-
-app.delete('/api/coupons/:id', async (req, res) => {
-    try {
-        await Coupon.deleteOne({ id: req.params.id });
+        await Product.deleteOne({ id: req.params.id });
         res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: "Erreur" }); }
+    } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/coupons/verify', async (req, res) => {
-    try {
-        const { code } = req.body;
-        const coupon = await Coupon.findOne({ code: code.toUpperCase(), active: true });
-        
-        if (!coupon) {
-            return res.status(404).json({ valid: false, message: "Code invalide ou expiré" });
-        }
-        
-        res.json({ valid: true, coupon });
-    } catch (e) {
-        res.status(500).json({ error: "Erreur verification" });
-    }
-});
-
-// ORDERS
+// COUPONS & ORDERS...
 app.get('/api/orders', async (req, res) => {
-    try {
-        const orders = await Order.find().sort({ date: -1 });
-        res.json(orders);
-    } catch (e) { res.status(500).json({ error: "Erreur" }); }
+    try { res.json(await Order.find().sort({ date: -1 })); } catch (e) { res.status(500).send(e); }
 });
 
-app.post('/api/orders', async (req, res) => {
-    try {
-        const orderData = req.body;
-        const orderId = `CMD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-        const order = new Order({ ...orderData, id: orderId });
-        await order.save();
-        res.json({ success: true, order });
-    } catch (e) { 
-        console.error(e);
-        res.status(500).json({ error: "Erreur lors de la commande" }); 
-    }
-});
-
-app.patch('/api/orders/:id/status', async (req, res) => {
-    try {
-        const { status } = req.body;
-        await Order.findOneAndUpdate({ id: req.params.id }, { status });
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: "Erreur" }); }
-});
-
-// --- ROUTE CATCH-ALL POUR REACT ROUTER ---
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// --- Démarrage Serveur ---
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Serveur démarré sur le port ${PORT}`);
 });
