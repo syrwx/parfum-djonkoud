@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { useHistory } from 'react-router-dom';
+// Replaced useHistory with useNavigate for react-router-dom v6 compatibility
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';
 import Logo from '../../components/Logo';
@@ -10,12 +11,14 @@ const AdminLogin: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login } = useAuth();
-  const history = useHistory();
+  // useHistory is replaced by useNavigate in react-router-dom v6
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (await login(email, password)) {
-      history.push('/admin/dashboard');
+      // history.push is replaced by navigate()
+      navigate('/admin/dashboard');
     }
   };
 

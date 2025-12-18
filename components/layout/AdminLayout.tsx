@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Link, useLocation, Redirect } from 'react-router-dom';
+// Replaced Redirect with Navigate as per react-router-dom v6 updates
+import { Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../Logo';
 import { LayoutDashboard, Package, ShoppingCart, LogOut, Layers, Settings, Ticket } from 'lucide-react';
@@ -10,7 +11,8 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
   const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Redirect to={{ pathname: "/admin/login", state: { from: location } }} />;
+    // Replaced Redirect with Navigate for react-router-dom v6
+    return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
   const navItems = [

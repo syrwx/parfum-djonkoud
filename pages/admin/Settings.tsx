@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { useAuth } from '../../context/AuthContext';
-import { ContactInfo, SiteSettings, WhatsAppAgent } from '../../types';
+import { ContactInfo, SiteSettings, WhatsAppAgent, PaymentMethodConfig } from '../../types';
 import Button from '../../components/ui/Button';
-import { Save, MapPin, Mail, Clock, Globe, Layout, Image as ImageIcon, Plus, Trash2, Edit2, ShieldCheck, Users, Phone, Lock, Key, Check } from 'lucide-react';
+import { Save, MapPin, Mail, Layout, Plus, Trash2, Edit2, CreditCard, DollarSign, Smartphone, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const WhatsAppIcon = ({ size = 20, className = "" }) => (
@@ -15,9 +15,9 @@ const WhatsAppIcon = ({ size = 20, className = "" }) => (
 
 const Settings: React.FC = () => {
   const { contactInfo, updateContactInfo, siteSettings, updateSiteSettings, refreshSettings } = useStore();
-  const { updateProfile, user } = useAuth();
+  const { user } = useAuth();
   
-  const [activeTab, setActiveTab] = useState<'contact' | 'whatsapp' | 'appearance' | 'security'>('contact');
+  const [activeTab, setActiveTab] = useState<'contact' | 'whatsapp' | 'appearance' | 'payments'>('contact');
   const [contactData, setContactData] = useState<ContactInfo>(contactInfo);
   const [appearanceData, setAppearanceData] = useState<SiteSettings>(siteSettings);
   const [isSaving, setIsSaving] = useState(false);
@@ -43,6 +43,15 @@ const Settings: React.FC = () => {
     setIsSaving(true);
     await updateSiteSettings(appearanceData);
     setIsSaving(false);
+  };
+
+  const togglePaymentMethod = async (id: string) => {
+    const updatedMethods = appearanceData.paymentMethods.map(m => 
+      m.id === id ? { ...m, active: !m.active } : m
+    );
+    const updatedSettings = { ...appearanceData, paymentMethods: updatedMethods };
+    setAppearanceData(updatedSettings);
+    await updateSiteSettings(updatedSettings);
   };
 
   const handleContactChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -77,6 +86,16 @@ const Settings: React.FC = () => {
     await updateContactInfo(newInfo);
   };
 
+  const getPaymentIcon = (id: string) => {
+    switch (id) {
+      case 'WAVE': return <Smartphone className="text-blue-500" />;
+      case 'ORANGE_MONEY': return <Smartphone className="text-orange-500" />;
+      case 'CARD': return <CreditCard className="text-amber-500" />;
+      case 'CASH': return <DollarSign className="text-green-500" />;
+      default: return <Check />;
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto pb-20">
       <div className="mb-8 border-b border-amber-900/30 pb-6">
@@ -85,9 +104,10 @@ const Settings: React.FC = () => {
       </div>
 
       <div className="flex space-x-2 mb-8 overflow-x-auto pb-2">
-        <button onClick={() => setActiveTab('contact')} className={`px-4 py-3 text-sm uppercase tracking-widest ${activeTab === 'contact' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-neutral-400'}`}>Info Base</button>
-        <button onClick={() => setActiveTab('whatsapp')} className={`px-4 py-3 text-sm uppercase tracking-widest flex items-center gap-2 ${activeTab === 'whatsapp' ? 'bg-green-700 text-white' : 'bg-neutral-900 text-green-500'}`}><WhatsAppIcon size={16}/> WhatsApp</button>
-        <button onClick={() => setActiveTab('appearance')} className={`px-4 py-3 text-sm uppercase tracking-widest ${activeTab === 'appearance' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-neutral-400'}`}>Design Site</button>
+        <button onClick={() => setActiveTab('contact')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap ${activeTab === 'contact' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-neutral-400'}`}>Info Base</button>
+        <button onClick={() => setActiveTab('whatsapp')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap flex items-center gap-2 ${activeTab === 'whatsapp' ? 'bg-green-700 text-white' : 'bg-neutral-900 text-green-500'}`}><WhatsAppIcon size={16}/> WhatsApp</button>
+        <button onClick={() => setActiveTab('payments')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap flex items-center gap-2 ${activeTab === 'payments' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-amber-400'}`}><CreditCard size={16}/> Paiements</button>
+        <button onClick={() => setActiveTab('appearance')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap ${activeTab === 'appearance' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-neutral-400'}`}>Design Site</button>
       </div>
 
       {activeTab === 'contact' && (
@@ -107,13 +127,9 @@ const Settings: React.FC = () => {
                 <label className="block text-amber-100 text-xs uppercase mb-2">Email</label>
                 <input type="email" name="email" value={contactData.email} onChange={handleContactChange} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" />
               </div>
-              <div className="md:col-span-2">
-                 <label className="block text-amber-100 text-xs uppercase mb-2">Horaires d'ouverture</label>
-                 <input type="text" name="hours" value={contactData.hours} onChange={handleContactChange} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" />
-              </div>
             </div>
           </div>
-          <div className="flex justify-end"><Button type="submit" disabled={isSaving}><Save size={18} /> {isSaving ? 'Sauvegarde...' : 'Sauvegarder Contact'}</Button></div>
+          <div className="flex justify-end"><Button type="submit" disabled={isSaving}><Save size={18} /> Sauvegarder Contact</Button></div>
         </form>
       )}
 
@@ -142,21 +158,38 @@ const Settings: React.FC = () => {
                ))}
              </div>
           </div>
-          {editingAgent && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-              <div className="bg-neutral-900 w-full max-w-md border border-green-900/50 p-6 relative">
-                <h3 className="text-xl font-serif text-green-400 mb-6 flex items-center gap-2"><WhatsAppIcon size={20}/> Éditer Agent</h3>
-                <div className="space-y-4">
-                  <input type="text" placeholder="Nom (ex: Service Commercial)" value={editingAgent.name || ''} onChange={e => setEditingAgent({...editingAgent, name: e.target.value})} className="w-full bg-black border border-neutral-700 p-3 text-white outline-none focus:border-green-500" />
-                  <input type="text" placeholder="Numéro (+223...)" value={editingAgent.phone || ''} onChange={e => setEditingAgent({...editingAgent, phone: e.target.value})} className="w-full bg-black border border-neutral-700 p-3 text-white outline-none focus:border-green-500 font-mono" />
-                  <select value={editingAgent.role || 'general'} onChange={e => setEditingAgent({...editingAgent, role: e.target.value as any})} className="w-full bg-black border border-neutral-700 p-3 text-white outline-none focus:border-green-500">
-                      <option value="general">Général</option><option value="export">Export</option><option value="wholesale">Grossistes</option>
-                  </select>
-                  <div className="flex gap-3 pt-4"><Button onClick={() => setEditingAgent(null)} variant="ghost" fullWidth>Annuler</Button><Button onClick={saveAgent} fullWidth className="bg-green-600 hover:bg-green-500 text-white border-none">Enregistrer</Button></div>
+        </div>
+      )}
+
+      {activeTab === 'payments' && (
+        <div className="animate-fade-in space-y-6">
+           <div className="bg-black border border-amber-900/30 p-6">
+            <h2 className="text-lg font-serif text-amber-100 mb-6 flex items-center gap-2"><CreditCard size={18} className="text-amber-500" /> Modes de Paiement</h2>
+            <p className="text-neutral-400 text-sm mb-8 italic">Activez ou désactivez les options de paiement visibles par vos clients lors du checkout.</p>
+            
+            <div className="space-y-4">
+              {appearanceData.paymentMethods.map(method => (
+                <div key={method.id} className="flex items-center justify-between p-4 bg-neutral-900 border border-neutral-800 group hover:border-amber-900/50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-black border border-neutral-800">
+                      {getPaymentIcon(method.id)}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white tracking-wide">{method.name}</h4>
+                      <p className="text-[10px] text-neutral-500 uppercase tracking-tighter">ID Système: {method.id}</p>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={() => togglePaymentMethod(method.id)}
+                    className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${method.active ? 'bg-amber-600' : 'bg-neutral-800'}`}
+                  >
+                    <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform duration-300 ${method.active ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                  </button>
                 </div>
-              </div>
+              ))}
             </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -176,7 +209,7 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="flex justify-end"><Button type="submit" disabled={isSaving}><Save size={18} /> {isSaving ? 'Sauvegarde...' : 'Sauvegarder Design'}</Button></div>
+          <div className="flex justify-end"><Button type="submit" disabled={isSaving}><Save size={18} /> Sauvegarder Design</Button></div>
         </form>
       )}
     </div>

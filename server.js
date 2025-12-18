@@ -93,7 +93,6 @@ const CouponSchema = new mongoose.Schema({
 });
 const Coupon = mongoose.model('Coupon', CouponSchema);
 
-// NOUVEAU : Schéma pour les réglages du site
 const SettingsSchema = new mongoose.Schema({
     contactInfo: {
         address: String,
@@ -109,7 +108,14 @@ const SettingsSchema = new mongoose.Schema({
         heroTitle: String,
         heroSubtitle: String,
         heroImage: String,
-        heroSlogan: String
+        heroSlogan: String,
+        paymentMethods: [
+          {
+            id: String,
+            name: String,
+            active: Boolean
+          }
+        ]
     }
 });
 const Settings = mongoose.model('Settings', SettingsSchema);
@@ -131,7 +137,13 @@ async function seedSettings() {
                     heroTitle: "L'Âme du Mali",
                     heroSubtitle: "Mali • Tradition • Luxe",
                     heroImage: "https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=2574&auto=format&fit=crop",
-                    heroSlogan: "L'essence du Mali, l'âme du luxe."
+                    heroSlogan: "L'essence du Mali, l'âme du luxe.",
+                    paymentMethods: [
+                      { id: 'WAVE', name: 'Wave / Mobile Money', active: true },
+                      { id: 'ORANGE_MONEY', name: 'Orange Money', active: true },
+                      { id: 'CARD', name: 'Carte Bancaire / VISA', active: true },
+                      { id: 'CASH', name: 'Paiement à la livraison', active: true }
+                    ]
                 }
             });
         }
@@ -159,10 +171,8 @@ async function seedAdmin() {
 }
 
 // --- Routes API ---
-
 app.get('/api/status', (req, res) => res.json({ status: 'Online' }));
 
-// SETTINGS ROUTES (Permanence des infos)
 app.get('/api/settings', async (req, res) => {
     try {
         const settings = await Settings.findOne();
@@ -177,7 +187,6 @@ app.put('/api/settings', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// AUTH
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -187,7 +196,6 @@ app.post('/api/auth/login', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Erreur" }); }
 });
 
-// PRODUCTS
 app.get('/api/products', async (req, res) => {
     try {
         const products = await Product.find();
@@ -217,9 +225,16 @@ app.delete('/api/products/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// COUPONS & ORDERS...
 app.get('/api/orders', async (req, res) => {
     try { res.json(await Order.find().sort({ date: -1 })); } catch (e) { res.status(500).send(e); }
+});
+
+app.post('/api/orders', async (req, res) => {
+  try {
+    const order = new Order(req.body);
+    await order.save();
+    res.json({ success: true, order });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('*', (req, res) => {

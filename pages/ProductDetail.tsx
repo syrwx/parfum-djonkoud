@@ -1,11 +1,11 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
-import { CURRENCY } from '../constants';
+import { CURRENCY, BRAND_NAME } from '../constants';
 import Button from '../components/ui/Button';
 import { useCart } from '../context/CartContext';
-import { Star, ShieldCheck, Truck, Tag } from 'lucide-react';
+import { Star, ShieldCheck, Truck, Tag, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ProductDetail: React.FC = () => {
@@ -14,6 +14,41 @@ const ProductDetail: React.FC = () => {
   const { addToCart } = useCart();
   
   const product = products.find(p => p.id === id);
+  const isOutOfStock = product ? product.stock <= 0 : false;
+
+  // Mise à jour dynamique des balises Meta pour le SEO et le partage (Open Graph)
+  useEffect(() => {
+    if (product) {
+      // 1. Titre de la page
+      const previousTitle = document.title;
+      document.title = `${product.name} | ${BRAND_NAME}`;
+
+      // 2. Helper pour mettre à jour ou créer les balises meta
+      const updateMeta = (name: string, content: string, isProperty = false) => {
+        const attribute = isProperty ? 'property' : 'name';
+        let element = document.querySelector(`meta[${attribute}="${name}"]`);
+        if (!element) {
+          element = document.createElement('meta');
+          element.setAttribute(attribute, name);
+          document.head.appendChild(element);
+        }
+        element.setAttribute('content', content);
+      };
+
+      // 3. Mise à jour des balises standard et Open Graph
+      updateMeta('description', product.description);
+      updateMeta('og:title', `${product.name} - DJONKOUD PARFUM`, true);
+      updateMeta('og:description', product.description, true);
+      updateMeta('og:image', product.image, true);
+      updateMeta('og:url', window.location.href, true);
+      updateMeta('og:type', 'product', true);
+
+      // Nettoyage au démontage du composant
+      return () => {
+        document.title = previousTitle;
+      };
+    }
+  }, [product]);
 
   if (!product) {
     return (
@@ -25,7 +60,7 @@ const ProductDetail: React.FC = () => {
   }
 
   const handleAddToCart = () => {
-    if (product.stock > 0) {
+    if (!isOutOfStock) {
       addToCart(product);
       toast.success('Ajouté au panier');
     } else {
@@ -39,7 +74,11 @@ const ProductDetail: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-12 lg:gap-20">
           {/* Image */}
           <div className="relative aspect-[4/5] bg-neutral-900 border border-neutral-800 overflow-hidden">
-            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+            <img 
+              src={product.image} 
+              alt={product.name} 
+              className={`w-full h-full object-cover transition-opacity duration-500 ${isOutOfStock ? 'opacity-40 grayscale' : 'opacity-100'}`} 
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
             
             {/* Logo Overlay */}
@@ -48,20 +87,38 @@ const ProductDetail: React.FC = () => {
                  <img src={product.logoOverlay} alt="Logo" className="w-full h-full object-contain drop-shadow-2xl" />
               </div>
             )}
+
+            {/* Out of Stock Overlay Text */}
+            {isOutOfStock && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="bg-black/60 backdrop-blur-sm border border-red-500/50 px-8 py-3 text-white font-serif text-2xl uppercase tracking-[0.2em] shadow-2xl transform -rotate-12">
+                  Épuisé
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Content */}
           <div className="flex flex-col justify-center space-y-8">
             <div>
-              <div className="flex justify-between items-start">
-                <span className="text-amber-500 uppercase tracking-widest text-xs font-bold mb-2 block">{product.category}</span>
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-amber-500 uppercase tracking-widest text-xs font-bold block">{product.category}</span>
+                  {isOutOfStock && (
+                    <span className="bg-red-950/50 border border-red-900/50 text-red-500 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 flex items-center gap-1">
+                      <AlertTriangle size={10} /> Rupture de stock
+                    </span>
+                  )}
+                </div>
                 {product.sku && (
                   <span className="text-neutral-500 font-mono text-xs">RÉF: {product.sku}</span>
                 )}
               </div>
-              <h1 className="font-serif text-4xl md:text-5xl text-amber-50 mb-4">{product.name}</h1>
+              <h1 className={`font-serif text-4xl md:text-5xl mb-4 ${isOutOfStock ? 'text-neutral-500' : 'text-amber-50'}`}>
+                {product.name}
+              </h1>
               <div className="flex items-center gap-4 mb-6">
-                <span className="text-2xl text-amber-500 font-mono">
+                <span className={`text-2xl font-mono ${isOutOfStock ? 'text-neutral-600 line-through' : 'text-amber-500'}`}>
                   {product.price.toLocaleString('fr-FR')} {CURRENCY}
                   {product.unit && <span className="text-sm text-neutral-400 font-sans ml-1">/ {product.unit}</span>}
                 </span>
@@ -97,10 +154,10 @@ const ProductDetail: React.FC = () => {
               <Button 
                 onClick={handleAddToCart} 
                 fullWidth 
-                className={`text-lg py-4 ${product.stock === 0 ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
-                disabled={product.stock === 0}
+                className={`text-lg py-4 ${isOutOfStock ? 'bg-neutral-800 text-neutral-500 border-neutral-700 opacity-50 cursor-not-allowed grayscale' : ''}`}
+                disabled={isOutOfStock}
               >
-                {product.stock > 0 ? 'Ajouter au Panier' : 'Rupture de stock'}
+                {!isOutOfStock ? 'Ajouter au Panier' : 'Actuellement indisponible'}
               </Button>
             </div>
 
@@ -110,8 +167,8 @@ const ProductDetail: React.FC = () => {
                 <span>Authenticité Garantie</span>
               </div>
               <div className="flex items-center gap-2">
-                <Truck size={16} className="text-amber-600" />
-                <span>Livraison partout à Bamako</span>
+                <Truck size={16} className={`text-amber-600 ${isOutOfStock ? 'opacity-30' : ''}`} />
+                <span className={isOutOfStock ? 'opacity-50' : ''}>Livraison partout à Bamako</span>
               </div>
             </div>
           </div>

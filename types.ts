@@ -33,6 +33,12 @@ export enum PaymentMethod {
   CASH = 'CASH'
 }
 
+export interface PaymentMethodConfig {
+  id: PaymentMethod;
+  name: string;
+  active: boolean;
+}
+
 export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'shipped' | 'delivered' | 'cancelled';
 
 export interface Order {
@@ -67,7 +73,7 @@ export interface ContactInfo {
   instagram?: string;
   facebook?: string;
   twitter?: string;
-  whatsAppAgents: WhatsAppAgent[]; // Nouvelle gestion d'équipe
+  whatsAppAgents: WhatsAppAgent[];
 }
 
 export interface SiteSettings {
@@ -75,6 +81,7 @@ export interface SiteSettings {
   heroSubtitle: string;
   heroImage: string;
   heroSlogan: string;
+  paymentMethods: PaymentMethodConfig[]; // Nouveau champ pour les paiements
 }
 
 export interface Coupon {

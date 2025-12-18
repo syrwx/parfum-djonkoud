@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product, Order, OrderStatus, ContactInfo, SiteSettings, Coupon } from '../types';
+import { Product, Order, OrderStatus, ContactInfo, SiteSettings, Coupon, PaymentMethod } from '../types';
 import { PRODUCTS, MOCK_ORDERS, SLOGANS } from '../constants';
 import toast from 'react-hot-toast';
 
@@ -52,7 +52,13 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     heroTitle: "L'Âme du Mali",
     heroSubtitle: "Mali • Tradition • Luxe",
     heroImage: "https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=2574&auto=format&fit=crop",
-    heroSlogan: SLOGANS[0]
+    heroSlogan: SLOGANS[0],
+    paymentMethods: [
+      { id: PaymentMethod.WAVE, name: 'Wave / Mobile Money', active: true },
+      { id: PaymentMethod.ORANGE_MONEY, name: 'Orange Money', active: true },
+      { id: PaymentMethod.CARD, name: 'Carte Bancaire / VISA', active: true },
+      { id: PaymentMethod.CASH, name: 'Paiement à la livraison', active: true }
+    ]
   });
 
   const fetchSettings = async () => {
@@ -158,7 +164,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       });
       if (res.ok) {
         setSiteSettings(settings);
-        toast.success("Design sauvegardé");
+        toast.success("Paramètres sauvegardés");
       }
     } catch (e) { toast.error("Erreur serveur"); }
   };
