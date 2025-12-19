@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Product, Order, OrderStatus, ContactInfo, SiteSettings, Coupon, PaymentMethod } from '../types';
-import { PRODUCTS, MOCK_ORDERS, SLOGANS } from '../constants';
 import toast from 'react-hot-toast';
 
 interface StoreContextType {
@@ -10,6 +9,7 @@ interface StoreContextType {
   coupons: Coupon[];
   contactInfo: ContactInfo;
   siteSettings: SiteSettings;
+  isLoading: boolean;
   addProduct: (product: Product) => Promise<boolean>;
   updateProduct: (id: string, updatedProduct: Partial<Product>) => Promise<boolean>;
   deleteProduct: (id: string) => Promise<void>;
@@ -39,28 +39,23 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [contactInfo, setContactInfo] = useState<ContactInfo>({
     address: "ACI 2000, Bamako, Mali",
     phone: "+223 70 00 00 00",
     email: "contact@djonkoud.ml",
     hours: "Lun - Sam : 09h00 - 19h00",
-    whatsAppAgents: [{ id: '1', name: 'Service Client', phone: '+223 70 00 00 00', role: 'general', active: true }]
+    whatsAppAgents: []
   });
 
-  // Fix: Added wholesaleThreshold property which was missing in the initial state but required by the SiteSettings interface.
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({
     heroTitle: "L'Âme du Mali",
     heroSubtitle: "Mali • Tradition • Luxe",
     heroImage: "https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=2574&auto=format&fit=crop",
-    heroSlogan: SLOGANS[0],
+    heroSlogan: "L'essence du Mali, l'âme du luxe.",
     wholesaleThreshold: 200000,
-    paymentMethods: [
-      { id: PaymentMethod.WAVE, name: 'Wave / Mobile Money', active: true },
-      { id: PaymentMethod.ORANGE_MONEY, name: 'Orange Money', active: true },
-      { id: PaymentMethod.CARD, name: 'Carte Bancaire / VISA', active: true },
-      { id: PaymentMethod.CASH, name: 'Paiement à la livraison', active: true }
-    ]
+    paymentMethods: []
   });
 
   const fetchSettings = async () => {
@@ -81,17 +76,17 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const res = await fetch('/api/products');
       if (res.ok) {
         const data = await res.json();
-        setProducts(data.length > 0 ? data : PRODUCTS);
+        // Plus de fallback vers les constantes : la DB est la seule source
+        setProducts(data);
       }
-    } catch (e) { setProducts(PRODUCTS); }
+    } catch (e) { console.error(e); }
   };
 
   const fetchOrders = async () => {
     try {
       const res = await fetch('/api/orders');
       if (res.ok) setOrders(await res.json());
-      else if (orders.length === 0) setOrders(MOCK_ORDERS);
-    } catch (e) { if (orders.length === 0) setOrders(MOCK_ORDERS); }
+    } catch (e) { console.error(e); }
   };
 
   const fetchCoupons = async () => {
@@ -101,15 +96,23 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } catch (e) { console.error(e); }
   };
 
+  const initData = async () => {
+    setIsLoading(true);
+    await Promise.all([
+      fetchSettings(),
+      fetchProducts(),
+      fetchOrders(),
+      fetchCoupons()
+    ]);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
-    fetchSettings();
-    fetchProducts();
-    fetchOrders();
-    fetchCoupons();
+    initData();
   }, []);
 
   const addProduct = async (product: Product): Promise<boolean> => {
-    const toastId = toast.loading('Sauvegarde...');
+    const toastId = toast.loading('Enregistrement en base de données...');
     try {
       const res = await fetch('/api/products', {
         method: 'POST',
@@ -118,29 +121,41 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       });
       if (!res.ok) throw new Error();
       await fetchProducts();
-      toast.success('Produit créé !', { id: toastId });
+      toast.success('Produit enregistré avec succès !', { id: toastId });
       return true;
     } catch (e) {
-      toast.error("Échec sauvegarde", { id: toastId });
+      toast.error("Erreur d'enregistrement", { id: toastId });
       return false;
     }
   };
 
   const updateProduct = async (id: string, updatedProduct: Partial<Product>): Promise<boolean> => {
+    const toastId = toast.loading('Mise à jour...');
     try {
-      await fetch(`/api/products/${id}`, {
+      const res = await fetch(`/api/products/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedProduct)
       });
-      await fetchProducts();
-      return true;
-    } catch (e) { return false; }
+      if (res.ok) {
+        await fetchProducts();
+        toast.success('Modifications enregistrées', { id: toastId });
+        return true;
+      }
+      throw new Error();
+    } catch (e) {
+      toast.error('Erreur de mise à jour', { id: toastId });
+      return false;
+    }
   };
 
   const deleteProduct = async (id: string) => {
-    await fetch(`/api/products/${id}`, { method: 'DELETE' });
-    await fetchProducts();
+    const toastId = toast.loading('Suppression...');
+    try {
+      await fetch(`/api/products/${id}`, { method: 'DELETE' });
+      await fetchProducts();
+      toast.success('Produit supprimé', { id: toastId });
+    } catch (e) { toast.error('Erreur'); }
   };
 
   const updateContactInfo = async (info: ContactInfo) => {
@@ -152,9 +167,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       });
       if (res.ok) {
         setContactInfo(info);
-        toast.success("Informations de contact sauvegardées");
+        toast.success("Informations de contact synchronisées");
       }
-    } catch (e) { toast.error("Erreur serveur"); }
+    } catch (e) { toast.error("Erreur de synchronisation"); }
   };
 
   const updateSiteSettings = async (settings: SiteSettings) => {
@@ -166,27 +181,31 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       });
       if (res.ok) {
         setSiteSettings(settings);
-        toast.success("Paramètres sauvegardés");
+        toast.success("Configuration site mise à jour");
       }
-    } catch (e) { toast.error("Erreur serveur"); }
+    } catch (e) { toast.error("Erreur de sauvegarde"); }
   };
 
   const updateStock = async (id: string, newStock: number) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: newStock } : p));
-    await fetch(`/api/products/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stock: newStock })
-    });
+    try {
+      await fetch(`/api/products/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stock: newStock })
+      });
+      setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: newStock } : p));
+    } catch (e) { console.error(e); }
   };
 
   const updateOrderStatus = async (id: string, status: OrderStatus) => {
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
-    await fetch(`/api/orders/${id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    });
+    try {
+      await fetch(`/api/orders/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+    } catch (e) { console.error(e); }
   };
 
   const addCoupon = async (coupon: Partial<Coupon>): Promise<boolean> => {
@@ -206,7 +225,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   return (
     <StoreContext.Provider value={{ 
-      products, orders, coupons, contactInfo, siteSettings,
+      products, orders, coupons, contactInfo, siteSettings, isLoading,
       addProduct, updateProduct, deleteProduct, updateStock,
       updateOrderStatus, updateContactInfo, updateSiteSettings,
       addCoupon, deleteCoupon, refreshCoupons: fetchCoupons,
