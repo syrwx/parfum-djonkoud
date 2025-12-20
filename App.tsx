@@ -34,7 +34,6 @@ const ScrollToTop = () => {
   return null;
 };
 
-// Wrapper for public pages to include Navbar/Footer/WhatsApp
 const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="flex flex-col min-h-screen bg-neutral-950 text-amber-50 overflow-x-hidden selection:bg-amber-900 selection:text-white">
     <Navbar />
@@ -54,9 +53,7 @@ const App: React.FC = () => {
           <HashRouter>
             <ScrollToTop />
             <Routes>
-              {/* Admin Routes - Login first for specificity */}
               <Route path="/admin/login" element={<AdminLogin />} />
-              
               <Route path="/admin/*" element={
                 <AdminLayout>
                   <Routes>
@@ -71,7 +68,6 @@ const App: React.FC = () => {
                 </AdminLayout>
               } />
 
-              {/* Public Routes */}
               <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
               <Route path="/shop" element={<PublicLayout><Shop /></PublicLayout>} />
               <Route path="/product/:id" element={<PublicLayout><ProductDetail /></PublicLayout>} />
