@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
@@ -12,6 +11,7 @@ import AiGuide from './pages/AiGuide';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Legal from './pages/Legal';
+import HeritagePrive from './pages/HeritagePrive';
 import AdminLogin from './pages/admin/Login';
 import AdminLayout from './components/layout/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
@@ -81,6 +81,7 @@ const App: React.FC = () => {
               <Route path="/about" element={<PublicLayout><About /></PublicLayout>} />
               <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
               <Route path="/legal" element={<PublicLayout><Legal /></PublicLayout>} />
+              <Route path="/heritage-prive" element={<PublicLayout><HeritagePrive /></PublicLayout>} />
             </Routes>
             <Toaster 
               position="bottom-right"
