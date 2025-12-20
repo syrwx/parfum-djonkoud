@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -57,10 +56,12 @@ app.use(compression()); // Compression Gzip/Brotli pour le JSON (Base64)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Cache statique pour les fichiers du build (JS, CSS, images locales)
+// --- SERVIR LES FICHIERS STATIQUES (Dossier DIST UNIQUEMENT) ---
+// On s'assure que le serveur pointe vers le dossier de build compilé
 app.use(express.static(path.join(__dirname, 'dist'), {
   maxAge: '1d',
-  etag: true
+  etag: true,
+  index: ['index.html']
 }));
 
 // --- Connexion Base de Données ---
@@ -209,8 +210,11 @@ app.post('/api/orders', async (req, res) => {
     res.json({ success: true });
 });
 
-// SPA Fallback
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'dist', 'index.html')));
+// --- SPA Fallback ---
+// Crucial : Cette route doit renvoyer UNIQUEMENT le fichier index.html du dossier DIST
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 SERVEUR DJONKOUD OPTIMISÉ SUR PORT ${PORT}`);

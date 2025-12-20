@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
   env.API_KEY = "AIzaSyCCvmXCSiyQub7R8sjFVNxD4j50DOmGGn8";
 
   return {
+    base: './',
     plugins: [react()],
     // Permet d'utiliser process.env.API_KEY dans le code React (ex: geminiService.ts)
     // même si c'est une application frontend pure après le build.
