@@ -53,6 +53,7 @@ const App: React.FC = () => {
           <HashRouter>
             <ScrollToTop />
             <Routes>
+              {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/*" element={
                 <AdminLayout>
@@ -68,8 +69,13 @@ const App: React.FC = () => {
                 </AdminLayout>
               } />
 
+              {/* Public Routes */}
               <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
-              <Route path="/shop" element={<PublicLayout><Shop /></PublicLayout>} />
+              {/* Route /collection demandée par le diagnostic technique */}
+              <Route path="/collection" element={<PublicLayout><Shop /></PublicLayout>} />
+              {/* Alias /shop conservé pour compatibilité */}
+              <Route path="/shop" element={<Navigate to="/collection" replace />} />
+              
               <Route path="/product/:id" element={<PublicLayout><ProductDetail /></PublicLayout>} />
               <Route path="/cart" element={<PublicLayout><Cart /></PublicLayout>} />
               <Route path="/checkout" element={<PublicLayout><Checkout /></PublicLayout>} />
@@ -78,6 +84,9 @@ const App: React.FC = () => {
               <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
               <Route path="/legal" element={<PublicLayout><Legal /></PublicLayout>} />
               <Route path="/heritage-prive" element={<PublicLayout><HeritagePrive /></PublicLayout>} />
+              
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <Toaster 
               position="bottom-right"
