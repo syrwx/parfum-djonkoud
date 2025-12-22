@@ -29,11 +29,11 @@ const Cart: React.FC = () => {
           {cart.map((item) => (
             <div key={item.id} className="flex gap-6 p-4 bg-neutral-900/50 border border-neutral-800">
               <div className="w-24 h-24 flex-shrink-0 bg-neutral-800">
-                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                <img src={item.image || 'https://via.placeholder.com/100'} alt={item.name} className="w-full h-full object-cover" />
               </div>
               <div className="flex-grow flex flex-col justify-between">
                 <div className="flex justify-between items-start">
-                  <h3 className="font-serif text-lg text-amber-100">{item.name}</h3>
+                  <h3 className="font-serif text-lg text-amber-100">{item.name || 'Produit'}</h3>
                   <button onClick={() => removeFromCart(item.id)} className="text-neutral-600 hover:text-red-500 transition-colors">
                     <Trash2 size={18} />
                   </button>
@@ -42,14 +42,14 @@ const Cart: React.FC = () => {
                 <div className="flex items-center gap-4 mt-2">
                   <div className="flex items-center border border-neutral-700">
                     <button 
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      onClick={() => updateQuantity(item.id, (item.quantity || 1) - 1)}
                       className="p-1 hover:bg-neutral-800 text-neutral-400"
                     >
                       <Minus size={14} />
                     </button>
-                    <span className="px-4 text-sm text-neutral-200 w-8 text-center">{item.quantity}</span>
+                    <span className="px-4 text-sm text-neutral-200 w-8 text-center">{item.quantity || 1}</span>
                     <button 
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      onClick={() => updateQuantity(item.id, (item.quantity || 1) + 1)}
                       className="p-1 hover:bg-neutral-800 text-neutral-400"
                     >
                       <Plus size={14} />
@@ -71,7 +71,7 @@ const Cart: React.FC = () => {
               </div>
               <div className="flex justify-between text-neutral-400">
                 <span>Livraison</span>
-                <span className="italic text-xs">Calculé à l'étape suivante</span>
+                <span className="italic text-xs">Calculée au règlement</span>
               </div>
               <div className="flex justify-between text-lg font-bold text-amber-500 pt-4 border-t border-neutral-800">
                 <span>Total</span>
@@ -80,7 +80,7 @@ const Cart: React.FC = () => {
             </div>
             <Link to="/checkout">
               <Button fullWidth>
-                Procéder au paiement <ArrowRight size={18} />
+                Régler la commande <ArrowRight size={18} />
               </Button>
             </Link>
           </div>

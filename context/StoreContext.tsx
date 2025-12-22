@@ -1,6 +1,5 @@
-
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product, Order, OrderStatus, ContactInfo, SiteSettings, Coupon, PaymentMethod } from '../types';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { Product, Order, OrderStatus, ContactInfo, SiteSettings, Coupon } from '../types';
 import toast from 'react-hot-toast';
 
 interface StoreContextType {
@@ -29,133 +28,120 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const useStore = () => {
   const context = useContext(StoreContext);
-  if (!context) {
-    throw new Error('useStore must be used within a StoreProvider');
-  }
+  if (!context) throw new Error('useStore must be used within a StoreProvider');
   return context;
 };
 
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Initialisation avec des tableaux vides pour éviter les erreurs .map()
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [contactInfo, setContactInfo] = useState<ContactInfo>({
-    address: "ACI 2000, Bamako, Mali",
-    phone: "+223 70 00 00 00",
-    email: "contact@djonkoud.ml",
-    hours: "Lun - Sam : 09h00 - 19h00",
+    address: "ACI 2000, Bamako, Mali", 
+    phone: "+223 70 00 00 00", 
+    email: "contact@djonkoud.ml", 
+    hours: "Lun - Sam : 09h00 - 19h00", 
     whatsAppAgents: []
   });
 
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({
-    heroTitle: "L'Âme du Mali",
-    heroSubtitle: "Mali • Tradition • Luxe",
-    heroImage: "https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=2574&auto=format&fit=crop",
-    heroSlogan: "L'essence du Mali, l'âme du luxe.",
-    wholesaleThreshold: 200000,
-    paymentMethods: []
+    heroTitle: "L'Âme du Mali", 
+    heroSubtitle: "Tradition & Luxe", 
+    heroImage: "https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=2574&auto=format&fit=crop", 
+    heroSlogan: "L'essence du Mali.", 
+    wholesaleThreshold: 200000, 
+    paymentMethods: [
+      { id: 'WAVE' as any, name: 'Wave', active: true },
+      { id: 'ORANGE_MONEY' as any, name: 'Orange Money', active: true },
+      { id: 'WHATSAPP' as any, name: 'WhatsApp', active: true }
+    ]
   });
 
-  const fetchSettings = async () => {
+  const safeJsonFetch = async (url: string) => {
     try {
-      const res = await fetch('/api/settings');
-      if (res.ok) {
-        const data = await res.json();
-        if (data) {
-          if (data.contactInfo) setContactInfo(data.contactInfo);
-          if (data.siteSettings) setSiteSettings(data.siteSettings);
-        }
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        return await res.json();
       }
-    } catch (e) { console.error("Erreur settings:", e); }
+      return null;
+    } catch (e) {
+      console.error(`Fetch error for ${url}:`, e);
+      return null;
+    }
   };
 
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch('/api/products');
-      if (res.ok) {
-        const data = await res.json();
-        // Plus de fallback vers les constantes : la DB est la seule source
-        setProducts(data);
-      }
-    } catch (e) { console.error(e); }
-  };
-
-  const fetchOrders = async () => {
-    try {
-      const res = await fetch('/api/orders');
-      if (res.ok) setOrders(await res.json());
-    } catch (e) { console.error(e); }
-  };
-
-  const fetchCoupons = async () => {
-    try {
-      const res = await fetch('/api/coupons');
-      if (res.ok) setCoupons(await res.json());
-    } catch (e) { console.error(e); }
-  };
-
-  const initData = async () => {
-    setIsLoading(true);
-    await Promise.all([
-      fetchSettings(),
-      fetchProducts(),
-      fetchOrders(),
-      fetchCoupons()
-    ]);
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    initData();
+  const refreshSettings = useCallback(async () => {
+    const data = await safeJsonFetch('/api/settings');
+    if (data) {
+      if (data.contactInfo) setContactInfo(data.contactInfo);
+      if (data.siteSettings) setSiteSettings(data.siteSettings);
+    }
   }, []);
 
+  const refreshProducts = useCallback(async () => {
+    const data = await safeJsonFetch('/api/products');
+    setProducts(Array.isArray(data) ? data : []);
+  }, []);
+
+  const refreshOrders = useCallback(async () => {
+    const data = await safeJsonFetch('/api/orders');
+    setOrders(Array.isArray(data) ? data : []);
+  }, []);
+
+  const refreshCoupons = useCallback(async () => {
+    const data = await safeJsonFetch('/api/coupons');
+    setCoupons(Array.isArray(data) ? data : []);
+  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([refreshSettings(), refreshProducts(), refreshOrders(), refreshCoupons()]);
+      } catch (e) {
+        console.error("Initialization error:", e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    init();
+  }, [refreshSettings, refreshProducts, refreshOrders, refreshCoupons]);
+
+  // Méthodes de mise à jour sécurisées...
   const addProduct = async (product: Product): Promise<boolean> => {
-    const toastId = toast.loading('Enregistrement en base de données...');
     try {
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(product)
       });
-      if (!res.ok) throw new Error();
-      await fetchProducts();
-      toast.success('Produit enregistré avec succès !', { id: toastId });
-      return true;
-    } catch (e) {
-      toast.error("Erreur d'enregistrement", { id: toastId });
+      if (res.ok) { await refreshProducts(); return true; }
       return false;
-    }
+    } catch (e) { return false; }
   };
 
   const updateProduct = async (id: string, updatedProduct: Partial<Product>): Promise<boolean> => {
-    const toastId = toast.loading('Mise à jour...');
     try {
       const res = await fetch(`/api/products/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedProduct)
       });
-      if (res.ok) {
-        await fetchProducts();
-        toast.success('Modifications enregistrées', { id: toastId });
-        return true;
-      }
-      throw new Error();
-    } catch (e) {
-      toast.error('Erreur de mise à jour', { id: toastId });
+      if (res.ok) { await refreshProducts(); return true; }
       return false;
-    }
+    } catch (e) { return false; }
   };
 
   const deleteProduct = async (id: string) => {
-    const toastId = toast.loading('Suppression...');
     try {
       await fetch(`/api/products/${id}`, { method: 'DELETE' });
-      await fetchProducts();
-      toast.success('Produit supprimé', { id: toastId });
-    } catch (e) { toast.error('Erreur'); }
+      await refreshProducts();
+    } catch (e) { console.error(e); }
   };
 
   const updateContactInfo = async (info: ContactInfo) => {
@@ -165,11 +151,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contactInfo: info, siteSettings })
       });
-      if (res.ok) {
-        setContactInfo(info);
-        toast.success("Informations de contact synchronisées");
-      }
-    } catch (e) { toast.error("Erreur de synchronisation"); }
+      if (res.ok) setContactInfo(info);
+    } catch (e) { console.error(e); }
   };
 
   const updateSiteSettings = async (settings: SiteSettings) => {
@@ -179,11 +162,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contactInfo, siteSettings: settings })
       });
-      if (res.ok) {
-        setSiteSettings(settings);
-        toast.success("Configuration site mise à jour");
-      }
-    } catch (e) { toast.error("Erreur de sauvegarde"); }
+      if (res.ok) setSiteSettings(settings);
+    } catch (e) { console.error(e); }
   };
 
   const updateStock = async (id: string, newStock: number) => {
@@ -193,7 +173,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stock: newStock })
       });
-      setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: newStock } : p));
+      await refreshProducts();
     } catch (e) { console.error(e); }
   };
 
@@ -204,23 +184,27 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
       });
-      setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+      await refreshOrders();
     } catch (e) { console.error(e); }
   };
 
   const addCoupon = async (coupon: Partial<Coupon>): Promise<boolean> => {
-    const res = await fetch('/api/coupons', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(coupon)
-    });
-    if (res.ok) { await fetchCoupons(); return true; }
-    return false;
+    try {
+      const res = await fetch('/api/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(coupon)
+      });
+      if (res.ok) { await refreshCoupons(); return true; }
+      return false;
+    } catch (e) { return false; }
   };
 
   const deleteCoupon = async (id: string) => {
-    await fetch(`/api/coupons/${id}`, { method: 'DELETE' });
-    await fetchCoupons();
+    try {
+      await fetch(`/api/coupons/${id}`, { method: 'DELETE' });
+      await refreshCoupons();
+    } catch (e) { console.error(e); }
   };
 
   return (
@@ -228,9 +212,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       products, orders, coupons, contactInfo, siteSettings, isLoading,
       addProduct, updateProduct, deleteProduct, updateStock,
       updateOrderStatus, updateContactInfo, updateSiteSettings,
-      addCoupon, deleteCoupon, refreshCoupons: fetchCoupons,
-      refreshProducts: fetchProducts, refreshOrders: fetchOrders,
-      refreshSettings: fetchSettings
+      addCoupon, deleteCoupon, refreshCoupons,
+      refreshProducts, refreshOrders, refreshSettings
     }}>
       {children}
     </StoreContext.Provider>

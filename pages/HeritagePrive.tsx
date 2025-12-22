@@ -1,14 +1,14 @@
 import React from 'react';
 import Button from '../components/ui/Button';
 import { CURRENCY } from '../constants';
-import { MessageCircle, Gem, Sparkles } from 'lucide-react';
+import { MessageCircle, Gem } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
 const HeritagePrive: React.FC = () => {
   const { contactInfo } = useStore();
 
   const handlePrivateOrder = (productName: string) => {
-    const agents = contactInfo?.whatsAppAgents || [];
+    const agents = (contactInfo?.whatsAppAgents || []);
     const agent = agents.find(a => a.role === 'wholesale' || a.role === 'general') || agents[0];
     
     if (!agent) return;
@@ -43,7 +43,7 @@ const HeritagePrive: React.FC = () => {
         <div className="absolute inset-0 z-0">
           <img 
             src="https://images.unsplash.com/photo-1547887538-e3a2f32cb1cc?q=80&w=2574&auto=format&fit=crop" 
-            alt="Oumou Sangaré Heritage" 
+            alt="Heritage" 
             className="w-full h-full object-cover opacity-20 animate-slow-zoom"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black"></div>
@@ -79,7 +79,7 @@ const HeritagePrive: React.FC = () => {
                 <div className="absolute bottom-8 left-8 right-8">
                   <h3 className="text-2xl font-serif text-white mb-4">{item.name}</h3>
                   <div className="flex gap-2">
-                    {item.notes.map(n => (
+                    {(item.notes || []).map(n => (
                       <span key={n} className="text-[8px] uppercase tracking-widest text-amber-500 border border-amber-900/40 px-3 py-1 bg-black/80 backdrop-blur-sm">
                         {n}
                       </span>

@@ -79,7 +79,7 @@ const Dashboard: React.FC = () => {
         />
         <StatCard 
           title="Total Produits" 
-          value={products?.length || 0} 
+          value={(products || []).length} 
           icon={<Package size={24} />} 
         />
         <StatCard 

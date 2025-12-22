@@ -35,7 +35,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           alt={product.name || 'Produit'} 
           loading="lazy"
           className={`w-full h-full object-cover transition-all duration-1000 transform ${isOutOfStock ? 'grayscale opacity-30' : 'opacity-70 group-hover:opacity-100 group-hover:scale-105'}`}
-          style={{ imageRendering: 'auto' }}
         />
         
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 group-hover:opacity-50 transition-opacity"></div>

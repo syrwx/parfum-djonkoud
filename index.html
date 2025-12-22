@@ -4,65 +4,58 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
     <title>DJONKOUD PARFUM | L'Essence du Mali</title>
-    <meta name="description" content="Encens et parfums d'intérieur de luxe inspirés des traditions maliennes." />
     
-    <!-- Polices -->
+    <!-- Polices Premium -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
     
-    <style>
-      *, ::before, ::after {
-        box-sizing: border-box;
+    <!-- Tailwind CSS CDN pour assurer le rendu visuel immédiat -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              serif: ['Playfair Display', 'serif'],
+              sans: ['Montserrat', 'sans-serif'],
+            },
+            colors: {
+              amber: {
+                50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d',
+                400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309',
+                800: '#92400e', 900: '#78350f', 950: '#451a03',
+              },
+            }
+          }
+        }
       }
+    </script>
 
-      html {
-        -webkit-text-size-adjust: 100%;
-        font-size: 100%;
-      }
-
-      body {
-        font-family: 'Montserrat', sans-serif;
-        background-color: #0a0a0a;
-        color: #fef3c7;
-        margin: 0;
-        padding: 0;
+    <style type="text/css">
+      body { 
+        margin: 0; 
+        background-color: #0a0a0a; 
+        color: #fef3c7; 
         -webkit-font-smoothing: antialiased;
-        overflow-x: hidden;
-        width: 100%;
       }
-
-      .gold-gradient {
-        background: linear-gradient(135deg, #D4AF37 0%, #F9E076 50%, #B8860B 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+      .gold-gradient { 
+        background: linear-gradient(135deg, #D4AF37 0%, #F9E076 50%, #B8860B 100%); 
+        -webkit-background-clip: text; 
+        -webkit-text-fill-color: transparent; 
       }
-
       .bogolan-pattern {
         background-color: #000000;
-        opacity: 0.3;
+        opacity: 0.1;
         background-image: radial-gradient(#8B5A2B 0.5px, transparent 0.5px), radial-gradient(#8B5A2B 0.5px, #000000 0.5px);
         background-size: 20px 20px;
         background-position: 0 0, 10px 10px;
       }
-
-      @keyframes fadeInUp { 
-        from { opacity: 0; transform: translateY(10px); } 
-        to { opacity: 1; transform: translateY(0); } 
-      }
-      
       @keyframes slowZoom {
         0% { transform: scale(1); }
-        100% { transform: scale(1.015); }
+        100% { transform: scale(1.02); }
       }
-      
-      .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
       .animate-slow-zoom { animation: slowZoom 30s infinite alternate ease-in-out; }
-
-      ::-webkit-scrollbar { width: 4px; }
-      ::-webkit-scrollbar-track { background: #0a0a0a; }
-      ::-webkit-scrollbar-thumb { background: #222; }
-      ::-webkit-scrollbar-thumb:hover { background: #D4AF37; }
     </style>
   <script type="importmap">
 {
