@@ -13,12 +13,11 @@ const ProductDetail: React.FC = () => {
   const { addToCart } = useCart();
   
   const product = (products || []).find(p => p.id === id);
-  const isOutOfStock = product ? product.stock <= 0 : false;
-
+  
   useEffect(() => {
     if (product) {
       const previousTitle = document.title;
-      document.title = `${product.name} | ${BRAND_NAME}`;
+      document.title = `${product.name || 'Produit'} | ${BRAND_NAME}`;
 
       const updateMeta = (name: string, content: string, isProperty = false) => {
         const attribute = isProperty ? 'property' : 'name';
@@ -32,7 +31,7 @@ const ProductDetail: React.FC = () => {
       };
 
       updateMeta('description', product.description || "");
-      updateMeta('og:title', `${product.name} - DJONKOUD PARFUM`, true);
+      updateMeta('og:title', `${product.name || 'Produit'} - DJONKOUD PARFUM`, true);
       updateMeta('og:description', product.description || "", true);
       updateMeta('og:image', product.image || "", true);
       updateMeta('og:url', window.location.href, true);
@@ -53,6 +52,8 @@ const ProductDetail: React.FC = () => {
     );
   }
 
+  const isOutOfStock = (product.stock || 0) <= 0;
+
   const handleAddToCart = () => {
     if (!isOutOfStock) {
       addToCart(product);
@@ -66,23 +67,20 @@ const ProductDetail: React.FC = () => {
     <div className="bg-neutral-950 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-2 gap-12 lg:gap-20">
-          {/* Image */}
           <div className="relative aspect-[4/5] bg-neutral-900 border border-neutral-800 overflow-hidden">
             <img 
-              src={product.image} 
-              alt={product.name} 
+              src={product.image || 'https://via.placeholder.com/800x1000?text=Indisponible'} 
+              alt={product.name || 'Produit'} 
               className={`w-full h-full object-cover transition-opacity duration-500 ${isOutOfStock ? 'opacity-40 grayscale' : 'opacity-100'}`} 
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
             
-            {/* Logo Overlay */}
             {product.logoOverlay && (
               <div className="absolute bottom-6 right-6 w-24 h-24 z-10 pointer-events-none">
                  <img src={product.logoOverlay} alt="Logo" className="w-full h-full object-contain drop-shadow-2xl" />
               </div>
             )}
 
-            {/* Out of Stock Overlay Text */}
             {isOutOfStock && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <span className="bg-black/60 backdrop-blur-sm border border-red-500/50 px-8 py-3 text-white font-serif text-2xl uppercase tracking-[0.2em] shadow-2xl transform -rotate-12">
@@ -92,12 +90,11 @@ const ProductDetail: React.FC = () => {
             )}
           </div>
 
-          {/* Content */}
           <div className="flex flex-col justify-center space-y-8">
             <div>
               <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-3">
-                  <span className="text-amber-500 uppercase tracking-widest text-xs font-bold block">{product.category}</span>
+                  <span className="text-amber-500 uppercase tracking-widest text-xs font-bold block">{product.category || 'Signature'}</span>
                   {isOutOfStock && (
                     <span className="bg-red-950/50 border border-red-900/50 text-red-500 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 flex items-center gap-1">
                       <AlertTriangle size={10} /> Rupture de stock
@@ -109,7 +106,7 @@ const ProductDetail: React.FC = () => {
                 )}
               </div>
               <h1 className={`font-serif text-4xl md:text-5xl mb-4 ${isOutOfStock ? 'text-neutral-500' : 'text-amber-50'}`}>
-                {product.name}
+                {product.name || 'Produit sans nom'}
               </h1>
               <div className="flex items-center gap-4 mb-6">
                 <span className={`text-2xl font-mono ${isOutOfStock ? 'text-neutral-600 line-through' : 'text-amber-500'}`}>
@@ -124,8 +121,8 @@ const ProductDetail: React.FC = () => {
             </div>
 
             <div className="prose prose-invert border-l-2 border-amber-900/50 pl-6">
-              <p className="text-lg text-neutral-300 italic font-serif">"{product.story}"</p>
-              <p className="text-sm text-neutral-400 mt-4 not-italic">{product.description}</p>
+              {product.story && <p className="text-lg text-neutral-300 italic font-serif">"{product.story}"</p>}
+              <p className="text-sm text-neutral-400 mt-4 not-italic">{product.description || ''}</p>
             </div>
 
             {product.notes && product.notes.length > 0 && (
@@ -164,7 +161,7 @@ const ProductDetail: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Truck size={16} className={`text-amber-600 ${isOutOfStock ? 'opacity-30' : ''}`} />
-                <span className={isOutOfStock ? 'opacity-50' : ''}>Livraison partout à Bamako</span>
+                <span className={isOutOfStock ? 'opacity-50' : ''}>Livraison Bamako & International</span>
               </div>
             </div>
           </div>

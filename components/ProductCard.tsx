@@ -12,7 +12,9 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addToCart } = useCart();
+  
   if (!product) return null;
+  
   const isOutOfStock = (product.stock || 0) <= 0;
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -22,18 +24,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       return;
     }
     addToCart(product);
-    toast.success(`${product.name} ajouté au panier`);
+    toast.success(`${product.name || 'Produit'} ajouté au panier`);
   };
 
   return (
     <Link to={`/product/${product.id}`} className="group block relative">
       <div className={`relative bg-neutral-900 aspect-[3/4] overflow-hidden border transition-all duration-700 ${isOutOfStock ? 'border-neutral-900 opacity-60' : 'border-neutral-800 group-hover:border-amber-700/40 shadow-2xl shadow-black'}`}>
         <img 
-          src={product.image} 
-          alt={product.name} 
+          src={product.image || 'https://via.placeholder.com/800x1000?text=Indisponible'} 
+          alt={product.name || 'Produit'} 
           loading="lazy"
           className={`w-full h-full object-cover transition-all duration-1000 transform ${isOutOfStock ? 'grayscale opacity-30' : 'opacity-70 group-hover:opacity-100 group-hover:scale-105'}`}
-          // Fix: Changing 'optimizeSpeed' to 'auto' to comply with standard CSS ImageRendering types for React CSSProperties
           style={{ imageRendering: 'auto' }}
         />
         
@@ -61,7 +62,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
         <div className="absolute top-6 left-6">
           <div className="bg-black/60 backdrop-blur-md border border-amber-900/30 px-4 py-1.5 text-[9px] uppercase tracking-[0.3em] text-amber-200 font-bold">
-            {product.category}
+            {product.category || 'Collection'}
           </div>
         </div>
 
@@ -77,7 +78,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <div className="pt-6 space-y-2">
         <div className="flex justify-between items-start gap-4">
           <h3 className={`font-serif text-xl tracking-tight leading-tight transition-colors duration-500 ${isOutOfStock ? 'text-neutral-600' : 'text-amber-50 group-hover:text-amber-500'}`}>
-            {product.name}
+            {product.name || 'Sans nom'}
           </h3>
           <div className="flex items-center gap-1.5 text-amber-600 bg-amber-900/10 px-2 py-0.5 border border-amber-900/20">
              <Star size={12} fill="currentColor" />
@@ -85,7 +86,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
         </div>
         <p className={`text-xs font-light line-clamp-2 leading-relaxed ${isOutOfStock ? 'text-neutral-700' : 'text-neutral-500'}`}>
-          {product.description}
+          {product.description || ''}
         </p>
         <div className="flex items-center gap-3 pt-2">
           <p className={`text-lg font-bold font-mono tracking-tighter ${isOutOfStock ? 'text-neutral-700 line-through' : 'text-amber-500'}`}>

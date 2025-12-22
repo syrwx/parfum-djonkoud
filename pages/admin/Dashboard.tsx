@@ -35,11 +35,11 @@ const Dashboard: React.FC = () => {
   }, [refreshOrders, refreshProducts]);
 
   const totalRevenue = (orders || [])
-    .filter(o => o.status === 'paid' || o.status === 'delivered')
+    .filter(o => o && (o.status === 'paid' || o.status === 'delivered'))
     .reduce((acc, curr) => acc + (curr.total || 0), 0);
 
-  const pendingOrders = (orders || []).filter(o => o.status === 'preparing' || o.status === 'pending').length;
-  const lowStockProducts = (products || []).filter(p => (p.stock || 0) < 10).length;
+  const pendingOrders = (orders || []).filter(o => o && (o.status === 'preparing' || o.status === 'pending')).length;
+  const lowStockProducts = (products || []).filter(p => p && (p.stock || 0) < 10).length;
 
   return (
     <div className="space-y-8">
@@ -97,7 +97,7 @@ const Dashboard: React.FC = () => {
             {(orders || []).slice(0, 5).map(order => (
               <div key={order.id} className="flex justify-between items-center py-3 border-b border-neutral-800 last:border-0">
                 <div>
-                  <p className="text-sm text-white font-medium">{order.customerName}</p>
+                  <p className="text-sm text-white font-medium">{order.customerName || 'Client'}</p>
                   <p className="text-xs text-neutral-500">ID: {order.id}</p>
                 </div>
                 <div className="text-right">
@@ -107,7 +107,7 @@ const Dashboard: React.FC = () => {
                     order.status === 'pending' ? 'border-yellow-900 text-yellow-500' :
                     'border-neutral-800 text-neutral-500'
                   }`}>
-                    {order.status}
+                    {order.status || 'statut'}
                   </span>
                 </div>
               </div>
@@ -121,9 +121,9 @@ const Dashboard: React.FC = () => {
            <div className="space-y-4">
              {(products || []).slice(0, 5).map(product => (
                <div key={product.id} className="flex items-center gap-4 py-2">
-                 <img src={product.image} alt={product.name} className="w-10 h-10 object-cover border border-neutral-800" />
+                 <img src={product.image || 'https://via.placeholder.com/100'} alt={product.name} className="w-10 h-10 object-cover border border-neutral-800" />
                  <div className="flex-1">
-                   <p className="text-sm text-white">{product.name}</p>
+                   <p className="text-sm text-white">{product.name || 'Produit'}</p>
                    <p className="text-xs text-neutral-500">Stock: {product.stock || 0}</p>
                  </div>
                  <span className="text-sm text-amber-600 font-bold">{(product.price || 0).toLocaleString()}</span>
