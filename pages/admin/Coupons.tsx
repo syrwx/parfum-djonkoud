@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { Coupon } from '../../types';
@@ -10,7 +9,6 @@ const CouponsManager: React.FC = () => {
   const { coupons, addCoupon, deleteCoupon } = useStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Form State
   const [code, setCode] = useState('');
   const [type, setType] = useState<'percent' | 'fixed'>('percent');
   const [value, setValue] = useState<number>(0);
@@ -44,7 +42,7 @@ const CouponsManager: React.FC = () => {
       </div>
 
       <div className="bg-black border border-amber-900/30 overflow-hidden">
-        {coupons.length === 0 ? (
+        {(!coupons || coupons.length === 0) ? (
            <div className="p-12 text-center text-neutral-500">
              <Ticket size={48} className="mx-auto mb-4 opacity-30" />
              <p>Aucun code promo actif.</p>
@@ -68,7 +66,7 @@ const CouponsManager: React.FC = () => {
                     {coupon.type === 'percent' ? 'Pourcentage (%)' : 'Montant Fixe'}
                   </td>
                   <td className="p-4 text-amber-500 font-bold">
-                    {coupon.type === 'percent' ? `-${coupon.value}%` : `-${coupon.value.toLocaleString()} ${CURRENCY}`}
+                    {coupon.type === 'percent' ? `-${coupon.value}%` : `-${(coupon.value || 0).toLocaleString()} ${CURRENCY}`}
                   </td>
                   <td className="p-4">
                     <span className="px-2 py-1 bg-green-900/20 text-green-500 text-xs uppercase font-bold border border-green-900/50">
@@ -90,7 +88,6 @@ const CouponsManager: React.FC = () => {
         )}
       </div>
 
-      {/* Modal Création */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-neutral-900 w-full max-w-md border border-amber-900/30 p-6 relative shadow-2xl">

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { Product } from '../../types';
@@ -15,7 +14,7 @@ const ProductsManager: React.FC = () => {
 
   useEffect(() => {
     refreshProducts();
-  }, []);
+  }, [refreshProducts]);
 
   const openModal = (product?: Product) => {
     if (product) {
@@ -63,7 +62,6 @@ const ProductsManager: React.FC = () => {
     }
   };
 
-  // Fonction utilitaire pour compresser l'image
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -73,12 +71,11 @@ const ProductsManager: React.FC = () => {
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 1200; // Largeur max suffisante pour le web
+          const MAX_WIDTH = 1200;
           const MAX_HEIGHT = 1200;
           let width = img.width;
           let height = img.height;
 
-          // Calcul des nouvelles dimensions en gardant le ratio
           if (width > height) {
             if (width > MAX_WIDTH) {
               height *= MAX_WIDTH / width;
@@ -96,7 +93,6 @@ const ProductsManager: React.FC = () => {
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            // Compression en WebP à 80% de qualité (bon compromis poids/qualité)
             const dataUrl = canvas.toDataURL('image/webp', 0.8);
             resolve(dataUrl);
           } else {
@@ -111,22 +107,17 @@ const ProductsManager: React.FC = () => {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    
-    // Réinitialiser l'input pour permettre de sélectionner le même fichier si erreur corrigée
     if (fileInputRef.current) {
         fileInputRef.current.value = '';
     }
-
     if (!file) return;
 
-    // 1. Validation du type MIME
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
     if (!allowedTypes.includes(file.type)) {
         toast.error(`Format non supporté (${file.type}). Utilisez JPG, PNG ou WebP.`);
         return;
     }
 
-    // 2. Validation de la taille (20 Mo Max)
     const MAX_SIZE_MB = 20;
     if (file.size > MAX_SIZE_MB * 1024 * 1024) { 
         const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
@@ -135,15 +126,11 @@ const ProductsManager: React.FC = () => {
     }
     
     const toastId = toast.loading("Optimisation de l'image...");
-    
     try {
-      // Compression avant de set le state
       const compressedImage = await compressImage(file);
-      
       if (!compressedImage || compressedImage.length < 50) {
           throw new Error("L'image générée est vide.");
       }
-
       setEditingProduct(prev => ({ ...prev, image: compressedImage }));
       toast.success("Image optimisée et chargée !", { id: toastId });
     } catch (error: any) {
@@ -176,7 +163,7 @@ const ProductsManager: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-800">
-            {products.map(product => (
+            {(products || []).map(product => (
               <tr key={product.id} className="hover:bg-neutral-900/50 transition-colors">
                 <td className="p-4">
                   <div className="flex items-center gap-3">
@@ -185,10 +172,10 @@ const ProductsManager: React.FC = () => {
                   </div>
                 </td>
                 <td className="p-4 text-neutral-400 text-sm">{product.category}</td>
-                <td className="p-4 text-amber-500 font-mono">{product.price.toLocaleString()}</td>
+                <td className="p-4 text-amber-500 font-mono">{(product.price || 0).toLocaleString()}</td>
                 <td className="p-4">
-                   <span className={`px-2 py-1 text-xs font-bold ${product.stock < 10 ? 'text-red-500 bg-red-900/10' : 'text-green-500 bg-green-900/10'}`}>
-                     {product.stock}
+                   <span className={`px-2 py-1 text-xs font-bold ${(product.stock || 0) < 10 ? 'text-red-500 bg-red-900/10' : 'text-green-500 bg-green-900/10'}`}>
+                     {product.stock || 0}
                    </span>
                 </td>
                 <td className="p-4 text-right space-x-2">
@@ -201,7 +188,6 @@ const ProductsManager: React.FC = () => {
         </table>
       </div>
 
-      {/* Edit/Create Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-neutral-900 w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-amber-900/30 p-6 relative">
@@ -262,7 +248,6 @@ const ProductsManager: React.FC = () => {
                 <label className="block text-amber-100 text-xs uppercase mb-2">Image du Produit</label>
                 <div className="flex flex-col gap-4">
                   <div className="flex gap-2 items-start">
-                     {/* Preview Box */}
                      <div className="w-24 h-24 bg-neutral-800 border border-neutral-700 flex-shrink-0 relative group overflow-hidden">
                         {editingProduct.image ? (
                           <img src={editingProduct.image} className="w-full h-full object-cover" alt="Preview" />
@@ -272,7 +257,6 @@ const ProductsManager: React.FC = () => {
                      </div>
                      
                      <div className="flex-1 space-y-2">
-                        {/* URL Input (Fallback) */}
                         <input 
                           type="text" 
                           placeholder="Ou coller une URL..."
@@ -280,8 +264,6 @@ const ProductsManager: React.FC = () => {
                           onChange={e => setEditingProduct({...editingProduct, image: e.target.value})}
                           className="w-full bg-black border border-neutral-700 p-3 text-sm text-white focus:border-amber-500 outline-none" 
                         />
-                        
-                        {/* File Upload Button */}
                         <input 
                           type="file" 
                           ref={fileInputRef} 
@@ -313,7 +295,7 @@ const ProductsManager: React.FC = () => {
                     placeholder="https://..."
                   />
                   <div className="w-12 h-12 bg-neutral-800 flex-shrink-0 flex items-center justify-center border border-neutral-700">
-                    {editingProduct.logoOverlay && <img src={editingProduct.logoOverlay} className="max-w-full max-h-full object-contain" />}
+                    {editingProduct.logoOverlay && <img src={editingProduct.logoOverlay} className="max-w-full max-h-full object-contain" alt="Logo" />}
                   </div>
                 </div>
                 <p className="text-[10px] text-neutral-500 mt-1">Ce logo s'affichera en superposition sur l'image du produit.</p>

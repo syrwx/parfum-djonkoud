@@ -33,10 +33,10 @@ const Checkout: React.FC = () => {
     }
   }, [country]);
 
-  const grandTotal = cartTotal + shippingCost;
+  const grandTotal = (cartTotal || 0) + shippingCost;
   
   const orderRouting = useMemo(() => {
-    const agents = contactInfo.whatsAppAgents || [];
+    const agents = contactInfo?.whatsAppAgents || [];
     const activeAgents = agents.filter(a => a.active);
     
     if (country !== 'Mali') {
@@ -44,8 +44,8 @@ const Checkout: React.FC = () => {
       if (exportAgent) return { agent: exportAgent, label: 'Service Export' };
     }
     
-    const threshold = siteSettings.wholesaleThreshold || 200000;
-    if (cartTotal >= threshold) {
+    const threshold = siteSettings?.wholesaleThreshold || 200000;
+    if ((cartTotal || 0) >= threshold) {
       const wholesaleAgent = activeAgents.find(a => a.role === 'wholesale');
       if (wholesaleAgent) return { agent: wholesaleAgent, label: 'Direction Commerciale (Grossiste)' };
     }
@@ -75,7 +75,7 @@ const Checkout: React.FC = () => {
 
   const generateWhatsAppMessage = () => {
     const { label } = orderRouting;
-    const itemList = cart.map(item => `🏺 *${item.name}* (x${item.quantity})`).join('\n');
+    const itemList = (cart || []).map(item => `🏺 *${item.name}* (x${item.quantity})`).join('\n');
     
     return `Bonjour Djonkoud ✨,
 
@@ -148,7 +148,7 @@ ${itemList}
     }
   };
 
-  const activePaymentMethods = siteSettings.paymentMethods?.filter(m => m.active) || [];
+  const activePaymentMethods = siteSettings?.paymentMethods?.filter(m => m.active) || [];
 
   return (
     <div className="bg-neutral-950 min-h-screen py-16">
@@ -254,13 +254,13 @@ ${itemList}
               <h2 className="font-serif text-2xl text-white mb-8 border-b border-neutral-800 pb-5">Récapitulatif</h2>
               
               <div className="space-y-4 mb-10 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                {cart.map(item => (
+                {(cart || []).map(item => (
                   <div key={item.id} className="flex justify-between items-center text-sm">
                     <div className="flex items-center gap-3">
                        <img src={item.image} className="w-10 h-10 object-cover border border-neutral-800" alt={item.name} />
                        <span className="text-neutral-300">{item.name} <span className="text-neutral-500 ml-1">x{item.quantity}</span></span>
                     </div>
-                    <span className="text-neutral-100 font-mono">{(item.price * item.quantity).toLocaleString()}</span>
+                    <span className="text-neutral-100 font-mono">{((item.price || 0) * item.quantity).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
@@ -268,7 +268,7 @@ ${itemList}
               <div className="space-y-4 pt-6 border-t border-neutral-800">
                 <div className="flex justify-between text-neutral-400 text-sm">
                   <span>Sous-total</span>
-                  <span>{cartTotal.toLocaleString()} {CURRENCY}</span>
+                  <span>{(cartTotal || 0).toLocaleString()} {CURRENCY}</span>
                 </div>
                 <div className="flex justify-between text-neutral-400 text-sm">
                   <span>Logistique ({country})</span>

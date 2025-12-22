@@ -8,12 +8,12 @@ import { CURRENCY } from '../constants';
 const Cart: React.FC = () => {
   const { cart, removeFromCart, updateQuantity, cartTotal } = useCart();
 
-  if (cart.length === 0) {
+  if (!cart || cart.length === 0) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 text-center">
         <h2 className="font-serif text-3xl text-amber-500 mb-4">Votre panier est vide</h2>
         <p className="text-neutral-400 mb-8">Laissez-vous tenter par nos senteurs d'exception.</p>
-        <Link to="/shop">
+        <Link to="/collection">
           <Button>Découvrir la collection</Button>
         </Link>
       </div>
@@ -38,7 +38,7 @@ const Cart: React.FC = () => {
                     <Trash2 size={18} />
                   </button>
                 </div>
-                <p className="text-amber-600 text-sm">{item.price.toLocaleString()} {CURRENCY}</p>
+                <p className="text-amber-600 text-sm">{(item.price || 0).toLocaleString()} {CURRENCY}</p>
                 <div className="flex items-center gap-4 mt-2">
                   <div className="flex items-center border border-neutral-700">
                     <button 
@@ -67,7 +67,7 @@ const Cart: React.FC = () => {
             <div className="space-y-4 mb-6 text-sm">
               <div className="flex justify-between text-neutral-400">
                 <span>Sous-total</span>
-                <span>{cartTotal.toLocaleString()} {CURRENCY}</span>
+                <span>{(cartTotal || 0).toLocaleString()} {CURRENCY}</span>
               </div>
               <div className="flex justify-between text-neutral-400">
                 <span>Livraison</span>
@@ -75,7 +75,7 @@ const Cart: React.FC = () => {
               </div>
               <div className="flex justify-between text-lg font-bold text-amber-500 pt-4 border-t border-neutral-800">
                 <span>Total</span>
-                <span>{cartTotal.toLocaleString()} {CURRENCY}</span>
+                <span>{(cartTotal || 0).toLocaleString()} {CURRENCY}</span>
               </div>
             </div>
             <Link to="/checkout">

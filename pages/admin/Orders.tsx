@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { OrderStatus } from '../../types';
@@ -10,7 +9,7 @@ const OrdersManager: React.FC = () => {
 
   useEffect(() => {
     refreshOrders();
-  }, []);
+  }, [refreshOrders]);
 
   const handleStatusChange = (id: string, status: string) => {
     updateOrderStatus(id, status as OrderStatus);
@@ -37,7 +36,7 @@ const OrdersManager: React.FC = () => {
       </div>
 
       <div className="bg-black border border-amber-900/30 overflow-hidden">
-        {orders.length === 0 ? (
+        {(!orders || orders.length === 0) ? (
           <div className="p-8 text-center text-neutral-500">Aucune commande pour le moment.</div>
         ) : (
         <table className="w-full text-left border-collapse">
@@ -57,13 +56,13 @@ const OrdersManager: React.FC = () => {
                 <td className="p-4 text-sm font-mono text-neutral-400">{order.id}</td>
                 <td className="p-4">
                   <div className="text-white text-sm font-medium">{order.customerName}</div>
-                  <div className="text-neutral-500 text-xs">{order.items.length} articles</div>
+                  <div className="text-neutral-500 text-xs">{order.items?.length || 0} articles</div>
                 </td>
                 <td className="p-4 text-neutral-400 text-sm">
-                  {new Date(order.date).toLocaleDateString()}
+                  {order.date ? new Date(order.date).toLocaleDateString() : 'N/A'}
                 </td>
                 <td className="p-4 text-amber-500 font-bold">
-                  {order.total.toLocaleString()} FCFA
+                  {(order.total || 0).toLocaleString()} FCFA
                 </td>
                 <td className="p-4">
                   <select 

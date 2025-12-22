@@ -4,13 +4,13 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const compression = require('compression');
-const sharp = require('sharp'); // Bibliothèque de traitement d'image haute performance
+const sharp = require('sharp');
 const app = express();
 
 // --- CONFIGURATION DU CACHE MÉMOIRE ---
 let productCache = null;
 let cacheTimestamp = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 5 * 60 * 1000;
 
 const clearProductCache = () => {
   productCache = null;
@@ -21,24 +21,19 @@ const clearProductCache = () => {
 // --- UTILITAIRE DE COMPRESSION D'IMAGE ---
 const optimizeImage = async (base64String) => {
   if (!base64String || !base64String.startsWith('data:image')) {
-    return base64String; // Si c'est déjà une URL ou vide, on ne touche pas
+    return base64String;
   }
-
   try {
     const parts = base64String.split(';base64,');
-    const mimeType = parts[0].split(':')[1];
     const buffer = Buffer.from(parts[1], 'base64');
-
-    // Traitement Sharp : Redimensionnement (max 800px) + Conversion WebP + Qualité 80%
     const optimizedBuffer = await sharp(buffer)
       .resize({ width: 800, withoutEnlargement: true })
       .webp({ quality: 80 })
       .toBuffer();
-
     return `data:image/webp;base64,${optimizedBuffer.toString('base64')}`;
   } catch (error) {
-    console.error('❌ Erreur lors de l\'optimisation de l\'image:', error);
-    return base64String; // Retourne l'original en cas d'échec pour ne pas bloquer l'upload
+    console.error('❌ Erreur optimisation image:', error);
+    return base64String;
   }
 };
 
@@ -46,19 +41,17 @@ const optimizeImage = async (base64String) => {
 process.on('uncaughtException', (err) => console.error('💥 CRASH:', err));
 process.on('unhandledRejection', (reason) => console.error('💥 REJET:', reason));
 
-// --- Configuration ---
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/djonkoud';
 
-// --- Middleware ---
 app.use(cors());
-app.use(compression()); // Compression Gzip/Brotli pour le JSON (Base64)
+app.use(compression());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// --- SERVIR LES FICHIERS STATIQUES (Dossier DIST UNIQUEMENT) ---
-// On s'assure que le serveur pointe vers le dossier de build compilé
-app.use(express.static(path.join(__dirname, 'dist'), {
+// --- SERVIR LES FICHIERS STATIQUES ---
+const distPath = path.join(__dirname, 'dist');
+app.use(express.static(distPath, {
   maxAge: '1d',
   etag: true,
   index: ['index.html']
@@ -81,7 +74,7 @@ const Product = mongoose.model('Product', new mongoose.Schema({
     description: String,
     story: String,
     notes: [String],
-    image: String, // Sera stocké en format WebP compressé
+    image: String,
     rating: { type: Number, default: 5 },
     sku: String,
     unit: String,
@@ -110,7 +103,6 @@ const Order = mongoose.model('Order', new mongoose.Schema({
     date: { type: Date, default: Date.now }
 }));
 
-// --- Initialisation ---
 async function seedInitialConfig() {
     try {
         const settings = await Settings.findOne();
@@ -130,13 +122,10 @@ async function seedInitialConfig() {
 }
 
 // --- Routes API ---
-
-// Produits avec Cache
 app.get('/api/products', async (req, res) => {
     try {
         const now = Date.now();
         if (productCache && (now - cacheTimestamp < CACHE_TTL)) return res.json(productCache);
-        
         const products = await Product.find().sort({ _id: -1 });
         productCache = products;
         cacheTimestamp = now;
@@ -144,7 +133,6 @@ app.get('/api/products', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "Erreur serveur" }); }
 });
 
-// Création avec optimisation image
 app.post('/api/products', async (req, res) => {
     try {
         const data = req.body;
@@ -156,7 +144,6 @@ app.post('/api/products', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Mise à jour avec optimisation image
 app.put('/api/products/:id', async (req, res) => {
     try {
         const data = req.body;
@@ -177,7 +164,6 @@ app.delete('/api/products/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Auth
 app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     const user = await Admin.findOne({ email, password });
@@ -185,24 +171,12 @@ app.post('/api/auth/login', async (req, res) => {
     else res.status(401).json({ success: false });
 });
 
-app.put('/api/auth/update', async (req, res) => {
-    const { currentEmail, newEmail, newPassword } = req.body;
-    const update = {};
-    if (newEmail) update.email = newEmail;
-    if (newPassword) update.password = newPassword;
-    const updated = await Admin.findOneAndUpdate({ email: currentEmail }, update, { new: true });
-    if (updated) res.json({ success: true, user: { email: updated.email } });
-    else res.status(404).json({ success: false });
-});
-
-// Settings
 app.get('/api/settings', async (req, res) => res.json(await Settings.findOne()));
 app.put('/api/settings', async (req, res) => {
     const updated = await Settings.findOneAndUpdate({}, req.body, { new: true, upsert: true });
     res.json(updated);
 });
 
-// Orders
 app.get('/api/orders', async (req, res) => res.json(await Order.find().sort({ date: -1 })));
 app.post('/api/orders', async (req, res) => {
     const order = new Order(req.body);
@@ -210,10 +184,11 @@ app.post('/api/orders', async (req, res) => {
     res.json({ success: true });
 });
 
+app.get('/api/status', (req, res) => res.json({ status: 'ok', db: mongoose.connection.readyState }));
+
 // --- SPA Fallback ---
-// Crucial : Cette route doit renvoyer UNIQUEMENT le fichier index.html du dossier DIST
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    res.sendFile(path.join(distPath, 'index.html'));
 });
 
 app.listen(PORT, '0.0.0.0', () => {

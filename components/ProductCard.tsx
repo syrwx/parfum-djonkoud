@@ -12,7 +12,8 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addToCart } = useCart();
-  const isOutOfStock = product.stock <= 0;
+  if (!product) return null;
+  const isOutOfStock = (product.stock || 0) <= 0;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -27,18 +28,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <Link to={`/product/${product.id}`} className="group block relative">
       <div className={`relative bg-neutral-900 aspect-[3/4] overflow-hidden border transition-all duration-700 ${isOutOfStock ? 'border-neutral-900 opacity-60' : 'border-neutral-800 group-hover:border-amber-700/40 shadow-2xl shadow-black'}`}>
-        {/* Optimisation Critique : image-rendering: optimizeSpeed & loading="lazy" */}
         <img 
           src={product.image} 
           alt={product.name} 
           loading="lazy"
           className={`w-full h-full object-cover transition-all duration-1000 transform ${isOutOfStock ? 'grayscale opacity-30' : 'opacity-70 group-hover:opacity-100 group-hover:scale-105'}`}
-          style={{ imageRendering: 'optimizeSpeed' }}
+          // Fix: Changing 'optimizeSpeed' to 'auto' to comply with standard CSS ImageRendering types for React CSSProperties
+          style={{ imageRendering: 'auto' }}
         />
         
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 group-hover:opacity-50 transition-opacity"></div>
         
-        {/* Logo Overlay - Version légère */}
         {product.logoOverlay && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3/4 opacity-60 pointer-events-none mix-blend-overlay">
             <img 
@@ -50,7 +50,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
         )}
 
-        {/* Quick Add Button */}
         {!isOutOfStock && (
           <button 
             onClick={handleAddToCart}
@@ -60,14 +59,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </button>
         )}
 
-        {/* Category Label */}
         <div className="absolute top-6 left-6">
           <div className="bg-black/60 backdrop-blur-md border border-amber-900/30 px-4 py-1.5 text-[9px] uppercase tracking-[0.3em] text-amber-200 font-bold">
             {product.category}
           </div>
         </div>
 
-        {/* Out of Stock Label */}
         {isOutOfStock && (
           <div className="absolute inset-0 flex items-center justify-center">
              <div className="bg-red-950/40 backdrop-blur-sm border border-red-500/30 px-6 py-2 text-[10px] font-black uppercase tracking-[0.5em] text-red-500 flex items-center gap-2">
@@ -84,7 +81,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </h3>
           <div className="flex items-center gap-1.5 text-amber-600 bg-amber-900/10 px-2 py-0.5 border border-amber-900/20">
              <Star size={12} fill="currentColor" />
-             <span className="text-[10px] font-bold font-mono">{product.rating}</span>
+             <span className="text-[10px] font-bold font-mono">{(product.rating || 0).toFixed(1)}</span>
           </div>
         </div>
         <p className={`text-xs font-light line-clamp-2 leading-relaxed ${isOutOfStock ? 'text-neutral-700' : 'text-neutral-500'}`}>
@@ -92,7 +89,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </p>
         <div className="flex items-center gap-3 pt-2">
           <p className={`text-lg font-bold font-mono tracking-tighter ${isOutOfStock ? 'text-neutral-700 line-through' : 'text-amber-500'}`}>
-            {product.price.toLocaleString()} <span className="text-[10px] ml-0.5">{CURRENCY}</span>
+            {(product.price || 0).toLocaleString()} <span className="text-[10px] ml-0.5">{CURRENCY}</span>
           </p>
           <div className="h-px flex-grow bg-neutral-900"></div>
         </div>

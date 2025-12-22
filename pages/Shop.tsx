@@ -8,31 +8,31 @@ const Shop: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   
-  // Montage stable pour éviter les boucles infinies sur EC2
   useEffect(() => {
     let mounted = true;
     if (mounted) {
       refreshProducts();
     }
     return () => { mounted = false; };
-  }, []);
+  }, [refreshProducts]);
 
   const categories = useMemo(() => 
-    ['all', ...Array.from(new Set(products.map(p => p.category)))],
+    ['all', ...Array.from(new Set((products || []).map(p => p.category)))],
     [products]
   );
 
   const filteredProducts = useMemo(() => {
-    return products.filter(product => {
+    return (products || []).filter(product => {
+      if (!product) return false;
       const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
       const query = searchQuery.toLowerCase().trim();
       
       if (!query) return matchesCategory;
 
       const matchesSearch = 
-        product.name.toLowerCase().includes(query) ||
-        product.description.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query) ||
+        product.name?.toLowerCase().includes(query) ||
+        product.description?.toLowerCase().includes(query) ||
+        product.category?.toLowerCase().includes(query) ||
         (product.notes && product.notes.some(note => note.toLowerCase().includes(query)));
 
       return matchesCategory && matchesSearch;
@@ -57,7 +57,6 @@ const Shop: React.FC = () => {
             Chaque fragrance est une pièce d'histoire malienne, façonnée pour l'élite contemporaine.
           </p>
 
-          {/* Search Bar - Optimisée pour mobile */}
           <div className="relative max-w-xl mx-auto group">
             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-neutral-600 group-focus-within:text-amber-500 transition-colors" />
@@ -80,7 +79,6 @@ const Shop: React.FC = () => {
           </div>
         </div>
 
-        {/* Filters & Count */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12 border-b border-neutral-900 pb-8">
           <div className="flex items-center gap-4 overflow-x-auto pb-4 md:pb-0 w-full md:w-auto scrollbar-hide">
             <div className="flex-shrink-0 text-amber-700">
@@ -106,7 +104,6 @@ const Shop: React.FC = () => {
           </div>
         </div>
 
-        {/* Product Grid - Optimisé pour performance RAM */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 text-amber-700 space-y-4">
              <div className="w-12 h-12 border-4 border-amber-900 border-t-amber-500 rounded-full animate-spin"></div>
@@ -120,7 +117,6 @@ const Shop: React.FC = () => {
           </div>
         )}
         
-        {/* Empty State */}
         {!isLoading && filteredProducts.length === 0 && (
           <div className="text-center py-32 bg-neutral-900/10 border border-neutral-900 mt-8">
             <div className="inline-flex justify-center items-center w-20 h-20 rounded-full bg-neutral-900 mb-6 border border-amber-900/20">

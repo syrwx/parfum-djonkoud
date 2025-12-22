@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
@@ -13,17 +12,14 @@ const ProductDetail: React.FC = () => {
   const { products } = useStore();
   const { addToCart } = useCart();
   
-  const product = products.find(p => p.id === id);
+  const product = (products || []).find(p => p.id === id);
   const isOutOfStock = product ? product.stock <= 0 : false;
 
-  // Mise à jour dynamique des balises Meta pour le SEO et le partage (Open Graph)
   useEffect(() => {
     if (product) {
-      // 1. Titre de la page
       const previousTitle = document.title;
       document.title = `${product.name} | ${BRAND_NAME}`;
 
-      // 2. Helper pour mettre à jour ou créer les balises meta
       const updateMeta = (name: string, content: string, isProperty = false) => {
         const attribute = isProperty ? 'property' : 'name';
         let element = document.querySelector(`meta[${attribute}="${name}"]`);
@@ -32,18 +28,16 @@ const ProductDetail: React.FC = () => {
           element.setAttribute(attribute, name);
           document.head.appendChild(element);
         }
-        element.setAttribute('content', content);
+        element.setAttribute('content', content || "");
       };
 
-      // 3. Mise à jour des balises standard et Open Graph
-      updateMeta('description', product.description);
+      updateMeta('description', product.description || "");
       updateMeta('og:title', `${product.name} - DJONKOUD PARFUM`, true);
-      updateMeta('og:description', product.description, true);
-      updateMeta('og:image', product.image, true);
+      updateMeta('og:description', product.description || "", true);
+      updateMeta('og:image', product.image || "", true);
       updateMeta('og:url', window.location.href, true);
       updateMeta('og:type', 'product', true);
 
-      // Nettoyage au démontage du composant
       return () => {
         document.title = previousTitle;
       };
@@ -54,7 +48,7 @@ const ProductDetail: React.FC = () => {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center">
         <h2 className="text-2xl text-amber-500 font-serif mb-4">Produit introuvable</h2>
-        <Link to="/shop"><Button variant="outline">Retour à la boutique</Button></Link>
+        <Link to="/collection"><Button variant="outline">Retour à la boutique</Button></Link>
       </div>
     );
   }
@@ -119,12 +113,12 @@ const ProductDetail: React.FC = () => {
               </h1>
               <div className="flex items-center gap-4 mb-6">
                 <span className={`text-2xl font-mono ${isOutOfStock ? 'text-neutral-600 line-through' : 'text-amber-500'}`}>
-                  {product.price.toLocaleString('fr-FR')} {CURRENCY}
+                  {(product.price || 0).toLocaleString('fr-FR')} {CURRENCY}
                   {product.unit && <span className="text-sm text-neutral-400 font-sans ml-1">/ {product.unit}</span>}
                 </span>
                 <div className="flex items-center gap-1 text-amber-400">
                   <Star size={16} fill="currentColor" />
-                  <span className="text-sm font-medium">{product.rating}/5.0</span>
+                  <span className="text-sm font-medium">{(product.rating || 0).toFixed(1)}/5.0</span>
                 </div>
               </div>
             </div>
@@ -134,21 +128,23 @@ const ProductDetail: React.FC = () => {
               <p className="text-sm text-neutral-400 mt-4 not-italic">{product.description}</p>
             </div>
 
-            <div>
-              <h3 className="text-sm uppercase tracking-widest text-neutral-500 mb-4 flex items-center gap-2">
-                <Tag size={14} /> Notes Olfactives
-              </h3>
-              <div className="flex flex-wrap gap-3">
-                {product.notes.map((note, idx) => (
-                  <span 
-                    key={idx} 
-                    className="px-4 py-2 rounded-full bg-amber-950/20 border border-amber-900/50 text-amber-100 text-xs font-medium uppercase tracking-widest hover:bg-amber-900/40 hover:border-amber-500/50 transition-all duration-300 cursor-default shadow-[0_2px_10px_rgba(0,0,0,0.2)]"
-                  >
-                    {note}
-                  </span>
-                ))}
+            {product.notes && product.notes.length > 0 && (
+              <div>
+                <h3 className="text-sm uppercase tracking-widest text-neutral-500 mb-4 flex items-center gap-2">
+                  <Tag size={14} /> Notes Olfactives
+                </h3>
+                <div className="flex flex-wrap gap-3">
+                  {product.notes.map((note, idx) => (
+                    <span 
+                      key={idx} 
+                      className="px-4 py-2 rounded-full bg-amber-950/20 border border-amber-900/50 text-amber-100 text-xs font-medium uppercase tracking-widest hover:bg-amber-900/40 hover:border-amber-500/50 transition-all duration-300 cursor-default shadow-[0_2px_10px_rgba(0,0,0,0.2)]"
+                    >
+                      {note}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="pt-6 border-t border-neutral-800">
               <Button 

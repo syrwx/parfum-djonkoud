@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { CURRENCY } from '../../constants';
@@ -20,7 +19,6 @@ const Dashboard: React.FC = () => {
   const { orders, products, refreshOrders, refreshProducts } = useStore();
   const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error'>('checking');
 
-  // Vérification de la connexion DB et rafraîchissement des données
   useEffect(() => {
     refreshOrders();
     refreshProducts();
@@ -34,14 +32,14 @@ const Dashboard: React.FC = () => {
       }
     };
     checkStatus();
-  }, []);
+  }, [refreshOrders, refreshProducts]);
 
-  const totalRevenue = orders
+  const totalRevenue = (orders || [])
     .filter(o => o.status === 'paid' || o.status === 'delivered')
-    .reduce((acc, curr) => acc + curr.total, 0);
+    .reduce((acc, curr) => acc + (curr.total || 0), 0);
 
-  const pendingOrders = orders.filter(o => o.status === 'preparing' || o.status === 'pending').length;
-  const lowStockProducts = products.filter(p => p.stock < 10).length;
+  const pendingOrders = (orders || []).filter(o => o.status === 'preparing' || o.status === 'pending').length;
+  const lowStockProducts = (products || []).filter(p => (p.stock || 0) < 10).length;
 
   return (
     <div className="space-y-8">
@@ -51,7 +49,6 @@ const Dashboard: React.FC = () => {
           <p className="text-neutral-400 mt-2">Aperçu de l'activité commerciale.</p>
         </div>
         
-        {/* Indicateur de Statut Système */}
         <div className={`flex items-center gap-2 px-4 py-2 rounded-full border ${
           dbStatus === 'connected' ? 'bg-green-900/20 border-green-800 text-green-500' : 
           dbStatus === 'error' ? 'bg-red-900/20 border-red-800 text-red-500' : 
@@ -72,7 +69,7 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Chiffre d'Affaires" 
-          value={`${totalRevenue.toLocaleString()} ${CURRENCY}`} 
+          value={`${(totalRevenue || 0).toLocaleString()} ${CURRENCY}`} 
           icon={<DollarSign size={24} />} 
         />
         <StatCard 
@@ -82,7 +79,7 @@ const Dashboard: React.FC = () => {
         />
         <StatCard 
           title="Total Produits" 
-          value={products.length} 
+          value={products?.length || 0} 
           icon={<Package size={24} />} 
         />
         <StatCard 
@@ -97,14 +94,14 @@ const Dashboard: React.FC = () => {
         <div className="bg-black border border-amber-900/30 p-6">
           <h3 className="text-lg font-serif text-amber-100 mb-6">Dernières Commandes</h3>
           <div className="space-y-4">
-            {orders.slice(0, 5).map(order => (
+            {(orders || []).slice(0, 5).map(order => (
               <div key={order.id} className="flex justify-between items-center py-3 border-b border-neutral-800 last:border-0">
                 <div>
                   <p className="text-sm text-white font-medium">{order.customerName}</p>
                   <p className="text-xs text-neutral-500">ID: {order.id}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-amber-500">{order.total.toLocaleString()} {CURRENCY}</p>
+                  <p className="text-sm text-amber-500">{(order.total || 0).toLocaleString()} {CURRENCY}</p>
                   <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 border ${
                     order.status === 'delivered' ? 'border-green-900 text-green-500' : 
                     order.status === 'pending' ? 'border-yellow-900 text-yellow-500' :
@@ -115,24 +112,24 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
             ))}
-            {orders.length === 0 && <p className="text-neutral-500 text-sm italic">Aucune commande récente.</p>}
+            {(!orders || orders.length === 0) && <p className="text-neutral-500 text-sm italic">Aucune commande récente.</p>}
           </div>
         </div>
 
         <div className="bg-black border border-amber-900/30 p-6">
            <h3 className="text-lg font-serif text-amber-100 mb-6">Produits Populaires</h3>
            <div className="space-y-4">
-             {products.slice(0, 5).map(product => (
+             {(products || []).slice(0, 5).map(product => (
                <div key={product.id} className="flex items-center gap-4 py-2">
                  <img src={product.image} alt={product.name} className="w-10 h-10 object-cover border border-neutral-800" />
                  <div className="flex-1">
                    <p className="text-sm text-white">{product.name}</p>
-                   <p className="text-xs text-neutral-500">Stock: {product.stock}</p>
+                   <p className="text-xs text-neutral-500">Stock: {product.stock || 0}</p>
                  </div>
-                 <span className="text-sm text-amber-600 font-bold">{product.price.toLocaleString()}</span>
+                 <span className="text-sm text-amber-600 font-bold">{(product.price || 0).toLocaleString()}</span>
                </div>
              ))}
-             {products.length === 0 && <p className="text-neutral-500 text-sm italic">Catalogue vide.</p>}
+             {(!products || products.length === 0) && <p className="text-neutral-500 text-sm italic">Catalogue vide.</p>}
            </div>
         </div>
       </div>
