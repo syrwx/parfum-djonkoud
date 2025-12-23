@@ -74,6 +74,8 @@ export interface ContactInfo {
   instagram?: string;
   facebook?: string;
   twitter?: string;
+  tiktok?: string;
+  telegram?: string;
   whatsAppAgents: WhatsAppAgent[];
 }
 
@@ -83,7 +85,7 @@ export interface SiteSettings {
   heroImage: string;
   heroSlogan: string;
   paymentMethods: PaymentMethodConfig[];
-  wholesaleThreshold: number; // Nouveau : seuil pour basculer en mode grossiste
+  wholesaleThreshold: number;
 }
 
 export interface Coupon {

@@ -33,7 +33,6 @@ export const useStore = () => {
 };
 
 export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initialisation avec des tableaux vides pour éviter les erreurs .map()
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -44,6 +43,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     phone: "+223 70 00 00 00", 
     email: "contact@djonkoud.ml", 
     hours: "Lun - Sam : 09h00 - 19h00", 
+    instagram: "",
+    facebook: "",
+    twitter: "",
+    tiktok: "",
+    telegram: "",
     whatsAppAgents: []
   });
 
@@ -78,7 +82,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const refreshSettings = useCallback(async () => {
     const data = await safeJsonFetch('/api/settings');
     if (data) {
-      if (data.contactInfo) setContactInfo(data.contactInfo);
+      if (data.contactInfo) setContactInfo(prev => ({ ...prev, ...data.contactInfo }));
       if (data.siteSettings) setSiteSettings(data.siteSettings);
     }
   }, []);
@@ -112,7 +116,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     init();
   }, [refreshSettings, refreshProducts, refreshOrders, refreshCoupons]);
 
-  // Méthodes de mise à jour sécurisées...
   const addProduct = async (product: Product): Promise<boolean> => {
     try {
       const res = await fetch('/api/products', {

@@ -4,7 +4,7 @@ import { useStore } from '../context/StoreContext';
 import { CURRENCY, BRAND_NAME } from '../constants';
 import Button from '../components/ui/Button';
 import { useCart } from '../context/CartContext';
-import { Star, ShieldCheck, Truck, Tag, AlertTriangle } from 'lucide-react';
+import { Star, ShieldCheck, Truck, Tag, AlertTriangle, Share2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ProductDetail: React.FC = () => {
@@ -42,6 +42,27 @@ const ProductDetail: React.FC = () => {
       };
     }
   }, [product]);
+
+  const handleShare = async () => {
+    if (!product) return;
+    
+    const shareData = {
+      title: product.name,
+      text: `Découvrez ${product.name} chez DJONKOUD PARFUM. ${product.description}`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('Lien copié dans le presse-papier !');
+      }
+    } catch (err) {
+      console.error('Erreur de partage:', err);
+    }
+  };
 
   if (!product) {
     return (
@@ -91,7 +112,7 @@ const ProductDetail: React.FC = () => {
           </div>
 
           <div className="flex flex-col justify-center space-y-8">
-            <div>
+            <div className="relative">
               <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-3">
                   <span className="text-amber-500 uppercase tracking-widest text-xs font-bold block">{product.category || 'Signature'}</span>
@@ -101,9 +122,18 @@ const ProductDetail: React.FC = () => {
                     </span>
                   )}
                 </div>
-                {product.sku && (
-                  <span className="text-neutral-500 font-mono text-xs">RÉF: {product.sku}</span>
-                )}
+                <div className="flex items-center gap-4">
+                  {product.sku && (
+                    <span className="text-neutral-500 font-mono text-xs">RÉF: {product.sku}</span>
+                  )}
+                  <button 
+                    onClick={handleShare}
+                    className="text-amber-500 hover:text-amber-400 transition-colors p-2 bg-amber-950/20 border border-amber-900/30 flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest"
+                    title="Partager ce produit"
+                  >
+                    <Share2 size={14} /> Partager
+                  </button>
+                </div>
               </div>
               <h1 className={`font-serif text-4xl md:text-5xl mb-4 ${isOutOfStock ? 'text-neutral-500' : 'text-amber-50'}`}>
                 {product.name || 'Produit sans nom'}

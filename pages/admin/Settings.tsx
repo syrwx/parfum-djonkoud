@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { useAuth } from '../../context/AuthContext';
 import { ContactInfo, SiteSettings, WhatsAppAgent } from '../../types';
 import Button from '../../components/ui/Button';
-import { Save, MapPin, Layout, Plus, Trash2, Edit2, CreditCard, DollarSign, Smartphone, Check, Users, Globe, Headphones, Target, MessageCircle, ShieldAlert, Lock } from 'lucide-react';
+import { Save, MapPin, Layout, Plus, Trash2, Edit2, CreditCard, DollarSign, Smartphone, Check, Users, Globe, Headphones, Target, MessageCircle, ShieldAlert, Lock, Instagram, Facebook, Twitter, Send, Video } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const WhatsAppIcon = ({ size = 20, className = "" }) => (
@@ -23,7 +22,6 @@ const Settings: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Partial<WhatsAppAgent> | null>(null);
 
-  // Security State
   const [newEmail, setNewEmail] = useState(user?.email || '');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -115,7 +113,7 @@ const Settings: React.FC = () => {
       </div>
 
       <div className="flex space-x-2 mb-8 overflow-x-auto pb-2">
-        <button onClick={() => setActiveTab('contact')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap ${activeTab === 'contact' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-neutral-400'}`}>Base</button>
+        <button onClick={() => setActiveTab('contact')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap ${activeTab === 'contact' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-neutral-400'}`}>Base & Réseaux</button>
         <button onClick={() => setActiveTab('whatsapp')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap flex items-center gap-2 ${activeTab === 'whatsapp' ? 'bg-green-700 text-white' : 'bg-neutral-900 text-green-500'}`}><WhatsAppIcon size={16}/> Équipe WhatsApp</button>
         <button onClick={() => setActiveTab('payments')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap flex items-center gap-2 ${activeTab === 'payments' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-amber-400'}`}><CreditCard size={16}/> Paiements</button>
         <button onClick={() => setActiveTab('appearance')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap ${activeTab === 'appearance' ? 'bg-amber-600 text-white' : 'bg-neutral-900 text-neutral-400'}`}>Design</button>
@@ -141,7 +139,30 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="flex justify-end"><Button type="submit" disabled={isSaving}><Save size={18} /> Sauvegarder</Button></div>
+
+          <div className="bg-black border border-amber-900/30 p-6">
+            <h2 className="text-lg font-serif text-amber-100 mb-6 flex items-center gap-2"><Globe size={18} className="text-amber-500" /> Réseaux Sociaux</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 text-amber-100 text-[10px] uppercase"><Instagram size={14}/> Instagram (Username)</label>
+                <input type="text" value={contactData.instagram || ''} onChange={e => setContactData({...contactData, instagram: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" placeholder="djonkoud.parfum" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 text-amber-100 text-[10px] uppercase"><Facebook size={14}/> Facebook (Username)</label>
+                <input type="text" value={contactData.facebook || ''} onChange={e => setContactData({...contactData, facebook: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" placeholder="DjonkoudParfum" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 text-amber-100 text-[10px] uppercase"><Video size={14}/> TikTok (Username)</label>
+                <input type="text" value={contactData.tiktok || ''} onChange={e => setContactData({...contactData, tiktok: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" placeholder="@djonkoud" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 text-amber-100 text-[10px] uppercase"><Send size={14}/> Telegram (Username/Link)</label>
+                <input type="text" value={contactData.telegram || ''} onChange={e => setContactData({...contactData, telegram: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-3 text-white focus:border-amber-500 outline-none" placeholder="t.me/djonkoud" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex justify-end"><Button type="submit" disabled={isSaving}><Save size={18} /> Sauvegarder tout</Button></div>
         </form>
       )}
 
