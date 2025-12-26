@@ -8,19 +8,40 @@ export interface PerfumeRecommendation {
 }
 
 /**
+ * Predefined fallback recommendations in case the AI is unavailable.
+ * Provides a high-quality "human" alternative.
+ */
+const ANCESTRAL_FALLBACKS: PerfumeRecommendation[] = [
+  {
+    suggestion: "Thiouraye Royal de Ségou",
+    poeticDescription: "Les ancêtres suggèrent la protection. Ce mélange royal, né des terres rouges, enveloppe votre aura d'une dignité ancestrale. C'est le choix de la souveraineté.",
+    ingredients: ["Gowé Millénaire", "Musc Noir", "Résines Sacrées"]
+  },
+  {
+    suggestion: "Brume du Djoliba",
+    poeticDescription: "L'esprit du fleuve Niger murmure la sérénité. Une fraîcheur qui lave les soucis du jour et prépare l'âme à la clarté. La paix avant tout.",
+    ingredients: ["Lotus Bleu", "Santal des Rives", "Notes Aquatiques"]
+  },
+  {
+    suggestion: "Nuit à Tombouctou",
+    poeticDescription: "Le désert appelle votre force intérieure. Une fragrance de savoir et de mystère, pour ceux qui tracent leur propre chemin sous les étoiles. La profondeur de l'esprit.",
+    ingredients: ["Épices Rares", "Encens de Tombouctou", "Ambre Sombre"]
+  }
+];
+
+/**
  * Generates a perfume recommendation based on mood and occasion using Gemini.
+ * Includes a robust fallback mechanism with 3 predefined responses.
  */
 export const getPerfumeRecommendation = async (mood: string, occasion: string): Promise<PerfumeRecommendation> => {
-  // CRITICAL: Initialize GoogleGenAI inside the function to ensure the most recent API key from process.env is used.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+  // Select a fallback in case of error or missing API key
+  const randomFallback = ANCESTRAL_FALLBACKS[Math.floor(Math.random() * ANCESTRAL_FALLBACKS.length)];
+
   if (!process.env.API_KEY) {
-    console.warn("API Key is missing for Gemini");
-    return {
-      suggestion: "Thiouraye Royal de Ségou",
-      poeticDescription: "L'API Key est manquante, mais nous vous recommandons notre classique intemporel.",
-      ingredients: ["Gowé", "Ambre"]
-    };
+    console.warn("API Key is missing for Gemini, using Ancestral Wisdom fallback.");
+    return randomFallback;
   }
 
   const prompt = `
@@ -34,7 +55,6 @@ export const getPerfumeRecommendation = async (mood: string, occasion: string): 
 
   try {
     const response = await ai.models.generateContent({
-      // Using 'gemini-3-flash-preview' for basic text tasks according to guidelines.
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
@@ -48,22 +68,19 @@ export const getPerfumeRecommendation = async (mood: string, occasion: string): 
               type: Type.ARRAY,
               items: { type: Type.STRING }
             }
-          }
+          },
+          required: ["suggestion", "poeticDescription", "ingredients"]
         }
       }
     });
 
-    // Directly access the .text property from GenerateContentResponse.
     const text = response.text;
     if (!text) throw new Error("No response from AI");
     
     return JSON.parse(text) as PerfumeRecommendation;
   } catch (error) {
-    console.error("Gemini Error:", error);
-    return {
-      suggestion: "Sélection Mystère",
-      poeticDescription: "Les esprits du parfum sont silencieux pour le moment. Laissez votre cœur choisir parmi nos trésors.",
-      ingredients: ["Mystère", "Passion", "Tradition"]
-    };
+    console.error("Gemini Error, providing Ancestral Fallback:", error);
+    // Return one of the high-quality pre-entered responses
+    return randomFallback;
   }
 };
