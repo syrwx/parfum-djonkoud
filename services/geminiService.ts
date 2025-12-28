@@ -8,49 +8,54 @@ export interface PerfumeRecommendation {
 }
 
 /**
- * Predefined fallback recommendations in case the AI is unavailable.
- * Provides a high-quality "human" alternative.
+ * RÉPONSES DE SECOURS (Sagesse Ancestrale)
+ * Ces réponses sont utilisées si l'IA ne répond pas ou si la clé API est désactivée.
  */
-const ANCESTRAL_FALLBACKS: PerfumeRecommendation[] = [
+const ANCESTRAL_WISDOM: PerfumeRecommendation[] = [
   {
-    suggestion: "Thiouraye Royal de Ségou",
-    poeticDescription: "Les ancêtres suggèrent la protection. Ce mélange royal, né des terres rouges, enveloppe votre aura d'une dignité ancestrale. C'est le choix de la souveraineté.",
-    ingredients: ["Gowé Millénaire", "Musc Noir", "Résines Sacrées"]
+    suggestion: "Le Trésor de l'Empire (Édition Spéciale)",
+    poeticDescription: "Les astres indiquent que vous portez en vous une force royale. Pour cette occasion, le Griot vous suggère une fragrance boisée et profonde, rappelant la noblesse des anciens rois du Mandé.",
+    ingredients: ["Oud Noir", "Résine de Luban", "Cèdre de l'Atlas"]
   },
   {
-    suggestion: "Brume du Djoliba",
-    poeticDescription: "L'esprit du fleuve Niger murmure la sérénité. Une fraîcheur qui lave les soucis du jour et prépare l'âme à la clarté. La paix avant tout.",
-    ingredients: ["Lotus Bleu", "Santal des Rives", "Notes Aquatiques"]
+    suggestion: "Brise du Niger au Crépuscule",
+    poeticDescription: "Votre humeur appelle à la sérénité. Comme une pirogue glissant sur le fleuve au coucher du soleil, cette essence florale et légère apportera la paix à votre esprit.",
+    ingredients: ["Lotus Bleu", "Santal Blanc", "Musc Végétal"]
   },
   {
-    suggestion: "Nuit à Tombouctou",
-    poeticDescription: "Le désert appelle votre force intérieure. Une fragrance de savoir et de mystère, pour ceux qui tracent leur propre chemin sous les étoiles. La profondeur de l'esprit.",
-    ingredients: ["Épices Rares", "Encens de Tombouctou", "Ambre Sombre"]
+    suggestion: "Éclat des Sables de Tombouctou",
+    poeticDescription: "Le vent du désert murmure des secrets de sagesse. Pour vous, une note épicée et mystérieuse qui révèle votre charisme et votre soif d'aventure sous les étoiles.",
+    ingredients: ["Ambre Doré", "Safran de Taliouine", "Vanille Sauvage"]
   }
 ];
 
 /**
- * Generates a perfume recommendation based on mood and occasion using Gemini.
- * Includes a robust fallback mechanism with 3 predefined responses.
+ * Génère une recommandation.
+ * Tente d'utiliser Gemini, mais bascule sur la Sagesse Ancestrale en cas d'erreur (Clé expirée, 403, etc.)
  */
 export const getPerfumeRecommendation = async (mood: string, occasion: string): Promise<PerfumeRecommendation> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Sélectionner une réponse de secours au hasard par défaut
+  const fallback = ANCESTRAL_WISDOM[Math.floor(Math.random() * ANCESTRAL_WISDOM.length)];
+  
+  const apiKey = process.env.API_KEY;
 
-  // Select a fallback in case of error or missing API key
-  const randomFallback = ANCESTRAL_FALLBACKS[Math.floor(Math.random() * ANCESTRAL_FALLBACKS.length)];
-
-  if (!process.env.API_KEY) {
-    console.warn("API Key is missing for Gemini, using Ancestral Wisdom fallback.");
-    return randomFallback;
+  // Si pas de clé, on ne perd pas de temps, on envoie le secours
+  if (!apiKey || apiKey.includes("AIzaSyCC")) { // On vérifie si c'est la clé qui a fuité
+     console.warn("Utilisation de la Sagesse Ancestrale (IA en pause).");
+     // On simule un petit délai pour le réalisme
+     await new Promise(resolve => setTimeout(resolve, 1500));
+     return fallback;
   }
 
+  const ai = new GoogleGenAI({ apiKey });
+
   const prompt = `
-    Tu es un 'Griot Parfumeur' expert de la marque de luxe malienne 'DJONKOUD PARFUM'.
-    L'utilisateur cherche une recommandation pour cette ambiance : Humeur: ${mood}, Occasion: ${occasion}.
-    
-    1. Suggère un type de parfum ou d'encens (ex: Boisé, Floral, Épicé, Doux).
-    2. Rédige une description poétique, courte (max 50 mots), mystique et élégante, évoquant le Mali, le fleuve Niger, le désert, ou les traditions royales.
-    3. Liste 3 ingrédients clés imaginaires ou réels (ex: Oud, Santal, Ambre).
+    Tu es le 'Griot Parfumeur' de DJONKOUD PARFUM. 
+    Recommande une fragrance pour : Humeur: ${mood}, Occasion: ${occasion}.
+    Réponds en JSON avec :
+    - suggestion (nom du type de parfum)
+    - poeticDescription (max 50 mots, style mystique malien)
+    - ingredients (liste de 3 ingrédients).
   `;
 
   try {
@@ -64,10 +69,7 @@ export const getPerfumeRecommendation = async (mood: string, occasion: string): 
           properties: {
             suggestion: { type: Type.STRING },
             poeticDescription: { type: Type.STRING },
-            ingredients: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            }
+            ingredients: { type: Type.ARRAY, items: { type: Type.STRING } }
           },
           required: ["suggestion", "poeticDescription", "ingredients"]
         }
@@ -75,12 +77,12 @@ export const getPerfumeRecommendation = async (mood: string, occasion: string): 
     });
 
     const text = response.text;
-    if (!text) throw new Error("No response from AI");
+    if (!text) throw new Error("Réponse vide");
     
     return JSON.parse(text) as PerfumeRecommendation;
   } catch (error) {
-    console.error("Gemini Error, providing Ancestral Fallback:", error);
-    // Return one of the high-quality pre-entered responses
-    return randomFallback;
+    console.error("Erreur Gemini (Clé bloquée ou réseau), basculement secours:", error);
+    // En cas d'erreur 403 (leaked key) ou autre, on renvoie la réponse pré-enregistrée
+    return fallback;
   }
 };
