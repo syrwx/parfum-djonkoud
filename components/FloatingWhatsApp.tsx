@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Headphones, Globe, Users, MessageCircle } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
@@ -19,7 +18,10 @@ const FloatingWhatsApp: React.FC = () => {
   const handleAgentClick = (agent: WhatsAppAgent) => {
     const phone = agent.phone.replace(/[^0-9]/g, '');
     const message = encodeURIComponent(`Bonjour ${agent.name}, je consulte votre site DJONKOUD PARFUM et j'aimerais des conseils.`);
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    const waUrl = `https://wa.me/${phone}?text=${message}`;
+    
+    // Correction iOS : window.location.href est plus fiable que window.open pour les liens d'applications sur Safari
+    window.location.href = waUrl;
   };
 
   if (agents.length === 0) return null;

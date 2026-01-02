@@ -15,6 +15,15 @@ export interface Product {
   logoOverlay?: string;
 }
 
+export interface Billboard {
+  active: boolean;
+  title: string;
+  subtitle: string;
+  buttonText: string;
+  link: string;
+  image: string;
+}
+
 export interface CartItem extends Product {
   quantity: number;
 }
@@ -86,6 +95,7 @@ export interface SiteSettings {
   heroSlogan: string;
   paymentMethods: PaymentMethodConfig[];
   wholesaleThreshold: number;
+  billboard?: Billboard;
 }
 
 export interface Coupon {

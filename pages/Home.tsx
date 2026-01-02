@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom';
 import Button from '../components/ui/Button';
 import { useStore } from '../context/StoreContext';
 import ProductCard from '../components/ProductCard';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles, ExternalLink } from 'lucide-react';
 
 const Home: React.FC = () => {
   const { products, siteSettings, isLoading } = useStore();
   const featuredProducts = (products || []).slice(0, 3);
+  const billboard = siteSettings?.billboard;
 
-  // Fallbacks visuels pour éviter l'écran vide pendant le chargement
   const heroImage = siteSettings?.heroImage || "https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=2574&auto=format&fit=crop";
   const heroTitle = siteSettings?.heroTitle || "L'Âme du Mali";
   const heroSubtitle = siteSettings?.heroSubtitle || "Mali • Tradition • Luxe";
@@ -83,17 +83,46 @@ const Home: React.FC = () => {
               ))}
             </div>
           )}
-          
-          <div className="mt-12 text-center md:hidden">
-            <Link to="/collection">
-              <Button variant="outline" fullWidth>Voir toute la collection</Button>
-            </Link>
-          </div>
         </div>
       </section>
 
+      {/* Billboard Advertising Panel (Panneau Publicitaire) */}
+      {billboard?.active && (
+        <section className="relative h-[400px] md:h-[500px] overflow-hidden flex items-center border-y border-amber-900/20">
+          <div className="absolute inset-0">
+            <img 
+              src={billboard.image || "https://images.unsplash.com/photo-1605218427368-36317b2c94d0?q=80&w=1200"} 
+              alt="Publicité Djonkoud" 
+              className="w-full h-full object-cover scale-105"
+            />
+            {/* Overlay sombre pour la lisibilité */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent"></div>
+          </div>
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 relative z-10 w-full">
+            <div className="max-w-xl space-y-6 animate-fade-in-up">
+              <span className="text-amber-500 text-xs font-black uppercase tracking-[0.4em] flex items-center gap-2">
+                <Sparkles size={14} /> Édition Limitée
+              </span>
+              <h2 className="font-serif text-4xl md:text-6xl text-white leading-tight">
+                {billboard.title}
+              </h2>
+              <p className="text-neutral-300 text-lg font-light leading-relaxed">
+                {billboard.subtitle}
+              </p>
+              <div className="pt-4">
+                <Link to={billboard.link || "/collection"}>
+                  <Button variant="premium" className="px-8 py-4">
+                    {billboard.buttonText || "Découvrir"} <ExternalLink size={18} className="ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* AI Teaser / Griot Section */}
-      <section className="py-24 bg-neutral-900/40 border-y border-neutral-900/60 relative overflow-hidden">
+      <section className="py-24 bg-neutral-900/40 border-b border-neutral-900/60 relative overflow-hidden">
         <div className="absolute inset-0 bogolan-pattern pointer-events-none"></div>
         <div className="max-w-7xl mx-auto px-6 sm:px-8 relative z-10">
           <div className="grid md:grid-cols-2 gap-16 md:gap-24 items-center">

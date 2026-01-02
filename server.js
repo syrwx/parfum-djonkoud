@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
@@ -109,11 +110,26 @@ async function seedInitialConfig() {
         if (!settings) {
             await Settings.create({
                 contactInfo: { address: "ACI 2000, Bamako, Mali", phone: "+223 70 00 00 00", email: "contact@djonkoud.ml", whatsAppAgents: [] },
-                siteSettings: { heroTitle: "L'Âme du Mali", heroSubtitle: "Tradition & Luxe", heroImage: "https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=2574&auto=format&fit=crop", heroSlogan: "L'essence du Mali.", wholesaleThreshold: 200000, paymentMethods: [
+                siteSettings: { 
+                  heroTitle: "L'Âme du Mali", 
+                  heroSubtitle: "Tradition & Luxe", 
+                  heroImage: "https://images.unsplash.com/photo-1615634260167-c8cdede054de?q=80&w=2574&auto=format&fit=crop", 
+                  heroSlogan: "L'essence du Mali.", 
+                  wholesaleThreshold: 200000, 
+                  paymentMethods: [
                     { id: 'WAVE', name: 'Wave', active: true },
                     { id: 'ORANGE_MONEY', name: 'Orange Money', active: true },
                     { id: 'WHATSAPP', name: 'WhatsApp', active: true }
-                ]}
+                  ],
+                  billboard: {
+                    active: false,
+                    title: "Offre Spéciale",
+                    subtitle: "Découvrez nos essences les plus rares",
+                    buttonText: "Découvrir",
+                    link: "/collection",
+                    image: "https://images.unsplash.com/photo-1605218427368-36317b2c94d0?q=80&w=1200&auto=format&fit=crop"
+                  }
+                }
             });
         }
         const admin = await Admin.findOne();
@@ -186,7 +202,6 @@ app.post('/api/orders', async (req, res) => {
 
 app.get('/api/status', (req, res) => res.json({ status: 'ok', db: mongoose.connection.readyState }));
 
-// --- SPA Fallback ---
 app.get('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
 });

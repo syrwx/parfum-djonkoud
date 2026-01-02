@@ -64,7 +64,9 @@ const Checkout: React.FC = () => {
       confetti.className = 'confetti-particle';
       confetti.style.left = Math.random() * 100 + 'vw';
       confetti.style.top = '-10px';
-      confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+      confetti.style.position = 'fixed';
+      confetti.style.zIndex = '9999';
+      confetti.style.animation = 'fall 3s linear forwards';
       confetti.style.background = i % 2 === 0 ? '#D4AF37' : '#F9E076';
       confetti.style.width = (Math.random() * 10 + 5) + 'px';
       confetti.style.height = confetti.style.width;
@@ -109,11 +111,11 @@ ${itemList}
     const cleanPhone = agent.phone.replace(/[^0-9]/g, '');
     const message = generateWhatsAppMessage();
 
-    toast.success("Redirection vers votre salon privé WhatsApp...");
+    toast.success("Redirection vers votre salon privé...");
     
-    setTimeout(() => {
-      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
-    }, 1000);
+    // Correction iOS : Utilisation de window.location.href sans setTimeout pour éviter le blocage Safari
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    window.location.href = waUrl;
   };
 
   const handlePayment = async () => {
@@ -152,6 +154,11 @@ ${itemList}
 
   return (
     <div className="bg-neutral-950 min-h-screen py-16">
+      <style>{`
+        @keyframes fall {
+          to { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+      `}</style>
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-12">
           <h1 className="font-serif text-4xl text-white mb-2 tracking-tight">Espace de Règlement</h1>

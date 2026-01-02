@@ -1,10 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { useAuth } from '../../context/AuthContext';
-import { ContactInfo, SiteSettings, WhatsAppAgent } from '../../types';
+import { ContactInfo, SiteSettings, WhatsAppAgent, Billboard } from '../../types';
 import Button from '../../components/ui/Button';
-import { Save, MapPin, Plus, Trash2, Edit2, CreditCard, Smartphone, Users, Globe, Headphones, Target, MessageCircle, ShieldAlert, Lock, Instagram, Facebook, Twitter, Send, Video } from 'lucide-react';
+import { 
+  Save, MapPin, Plus, Trash2, Edit2, Globe, Headphones, 
+  Target, MessageCircle, ShieldAlert, Lock, Instagram, 
+  Facebook, Twitter, Send, Video, Layout, Image as ImageIcon, 
+  Users, X, Loader2, Sparkles, Monitor
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const WhatsAppIcon = ({ size = 20 }) => (
@@ -15,17 +19,22 @@ const WhatsAppIcon = ({ size = 20 }) => (
 
 const Settings: React.FC = () => {
   const { contactInfo, updateContactInfo, siteSettings, updateSiteSettings, refreshSettings } = useStore();
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   
-  const [activeTab, setActiveTab] = useState<'contact' | 'whatsapp' | 'appearance' | 'payments' | 'security'>('contact');
+  const [activeTab, setActiveTab] = useState<'contact' | 'whatsapp' | 'ads' | 'appearance' | 'security'>('contact');
   const [contactData, setContactData] = useState<ContactInfo>(contactInfo);
   const [appearanceData, setAppearanceData] = useState<SiteSettings>(siteSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Partial<WhatsAppAgent> | null>(null);
 
-  const [newEmail, setNewEmail] = useState(user?.email || '');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [billboardData, setBillboardData] = useState<Billboard>(siteSettings.billboard || {
+    active: false,
+    title: '',
+    subtitle: '',
+    buttonText: 'Découvrir',
+    link: '/collection',
+    image: ''
+  });
 
   useEffect(() => {
     refreshSettings();
@@ -34,6 +43,9 @@ const Settings: React.FC = () => {
   useEffect(() => {
     setContactData(contactInfo);
     setAppearanceData(siteSettings);
+    if (siteSettings.billboard) {
+      setBillboardData(siteSettings.billboard);
+    }
   }, [contactInfo, siteSettings]);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
@@ -52,39 +64,62 @@ const Settings: React.FC = () => {
     toast.success("Design mis à jour");
   };
 
+  const handleAdsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    await updateSiteSettings({ ...appearanceData, billboard: billboardData });
+    setIsSaving(false);
+    toast.success("Publicité mise à jour");
+  };
+
   const saveAgent = async () => {
-    if (!editingAgent || !editingAgent.name || !editingAgent.phone) return;
+    if (!editingAgent || !editingAgent.name || !editingAgent.phone) {
+      toast.error("Veuillez remplir tous les champs de l'agent");
+      return;
+    }
+    
     let newAgents = [...contactData.whatsAppAgents];
     const existingIndex = newAgents.findIndex(a => a.id === editingAgent.id);
-    if (existingIndex >= 0) newAgents[existingIndex] = editingAgent as WhatsAppAgent;
-    else newAgents.push({ ...editingAgent, id: Date.now().toString(), active: true } as WhatsAppAgent);
+    
+    if (existingIndex >= 0) {
+      newAgents[existingIndex] = editingAgent as WhatsAppAgent;
+    } else {
+      newAgents.push({ 
+        ...editingAgent, 
+        id: Date.now().toString(), 
+        active: true 
+      } as WhatsAppAgent);
+    }
 
     const newInfo = { ...contactData, whatsAppAgents: newAgents };
     setContactData(newInfo);
     await updateContactInfo(newInfo);
     setEditingAgent(null);
+    toast.success("Agent WhatsApp enregistré");
   };
 
   const deleteAgent = async (id: string) => {
+    if (!confirm("Supprimer cet agent ?")) return;
     const newAgents = contactData.whatsAppAgents.filter(a => a.id !== id);
     const newInfo = { ...contactData, whatsAppAgents: newAgents };
     setContactData(newInfo);
     await updateContactInfo(newInfo);
+    toast.success("Agent supprimé");
   };
 
   return (
     <div className="max-w-4xl mx-auto pb-20">
       <div className="mb-8 border-b border-amber-900/30 pb-6">
         <h1 className="text-3xl font-serif text-white">Administration Centrale</h1>
-        <p className="text-neutral-400 mt-2">Pilotez votre présence digitale.</p>
+        <p className="text-neutral-400 mt-2">Pilotez votre présence digitale et votre image de marque.</p>
       </div>
 
       <div className="flex space-x-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
         <button onClick={() => setActiveTab('contact')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap transition-all ${activeTab === 'contact' ? 'bg-amber-600 text-black font-bold' : 'bg-neutral-900 text-neutral-400'}`}>Contact & Social</button>
         <button onClick={() => setActiveTab('whatsapp')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap flex items-center gap-2 transition-all ${activeTab === 'whatsapp' ? 'bg-[#25D366] text-black font-bold' : 'bg-neutral-900 text-[#25D366]'}`}><WhatsAppIcon size={16}/> WhatsApp</button>
-        <button onClick={() => setActiveTab('payments')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap transition-all ${activeTab === 'payments' ? 'bg-amber-600 text-black font-bold' : 'bg-neutral-900 text-neutral-400'}`}>Paiements</button>
-        <button onClick={() => setActiveTab('appearance')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap transition-all ${activeTab === 'appearance' ? 'bg-amber-600 text-black font-bold' : 'bg-neutral-900 text-neutral-400'}`}>Design</button>
-        <button onClick={() => setActiveTab('security')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap transition-all ${activeTab === 'security' ? 'bg-red-700 text-white font-bold' : 'bg-neutral-900 text-red-500'}`}>Sécurité</button>
+        <button onClick={() => setActiveTab('ads')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap flex items-center gap-2 transition-all ${activeTab === 'ads' ? 'bg-amber-500 text-black font-bold' : 'bg-neutral-900 text-neutral-400'}`}><Layout size={16}/> Publicité</button>
+        <button onClick={() => setActiveTab('appearance')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap flex items-center gap-2 transition-all ${activeTab === 'appearance' ? 'bg-amber-600 text-black font-bold' : 'bg-neutral-900 text-neutral-400'}`}><Monitor size={16}/> Design</button>
+        <button onClick={() => setActiveTab('security')} className={`px-4 py-3 text-sm uppercase tracking-widest whitespace-nowrap flex items-center gap-2 transition-all ${activeTab === 'security' ? 'bg-red-700 text-white font-bold' : 'bg-neutral-900 text-red-500'}`}><Lock size={16}/> Sécurité</button>
       </div>
 
       {activeTab === 'contact' && (
@@ -106,30 +141,58 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </div>
+          <div className="flex justify-end"><Button type="submit" disabled={isSaving} className="px-12 py-4">{isSaving ? <Loader2 className="animate-spin" /> : <Save size={18} />} Sauvegarder</Button></div>
+        </form>
+      )}
 
+      {activeTab === 'ads' && (
+        <form onSubmit={handleAdsSubmit} className="space-y-8 animate-fade-in">
           <div className="bg-black border border-amber-900/30 p-8 shadow-2xl">
-            <h2 className="text-xl font-serif text-amber-100 mb-8 flex items-center gap-2"><Globe size={20} className="text-amber-500" /> Écosystème Social</h2>
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-neutral-500 text-[10px] uppercase tracking-widest font-black"><Instagram size={14} className="text-pink-500"/> Instagram</label>
-                <input type="text" value={contactData.instagram || ''} onChange={e => setContactData({...contactData, instagram: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-4 text-white focus:border-amber-500 outline-none" placeholder="nom_utilisateur" />
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-xl font-serif text-amber-100 flex items-center gap-2"><Layout size={20} className="text-amber-500" /> Panneau Publicitaire</h2>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] uppercase tracking-widest text-neutral-500">Statut</span>
+                <button 
+                  type="button"
+                  onClick={() => setBillboardData({...billboardData, active: !billboardData.active})}
+                  className={`w-12 h-6 flex items-center p-1 transition-colors ${billboardData.active ? 'bg-green-600' : 'bg-neutral-800'}`}
+                >
+                  <div className={`w-4 h-4 bg-white transition-transform ${billboardData.active ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                </button>
               </div>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-neutral-500 text-[10px] uppercase tracking-widest font-black"><Video size={14} className="text-white"/> TikTok</label>
-                <input type="text" value={contactData.tiktok || ''} onChange={e => setContactData({...contactData, tiktok: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-4 text-white focus:border-amber-500 outline-none" placeholder="@nom_utilisateur" />
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-neutral-500 text-[10px] uppercase mb-2 tracking-[0.2em] font-black">Titre de la Publicité</label>
+                <input type="text" value={billboardData.title} onChange={e => setBillboardData({...billboardData, title: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-4 text-white focus:border-amber-500 outline-none" placeholder="Ex: Promotion de Tabaski" />
               </div>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-neutral-500 text-[10px] uppercase tracking-widest font-black"><Send size={14} className="text-blue-400"/> Telegram</label>
-                <input type="text" value={contactData.telegram || ''} onChange={e => setContactData({...contactData, telegram: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-4 text-white focus:border-amber-500 outline-none" placeholder="lien_ou_nom" />
+              <div>
+                <label className="block text-neutral-500 text-[10px] uppercase mb-2 tracking-[0.2em] font-black">Sous-titre / Description</label>
+                <textarea value={billboardData.subtitle} onChange={e => setBillboardData({...billboardData, subtitle: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-4 text-white focus:border-amber-500 outline-none h-24" placeholder="Ex: Profitez de -20% sur toute la collection Heritage." />
               </div>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-neutral-500 text-[10px] uppercase tracking-widest font-black"><Facebook size={14} className="text-blue-600"/> Facebook</label>
-                <input type="text" value={contactData.facebook || ''} onChange={e => setContactData({...contactData, facebook: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-4 text-white focus:border-amber-500 outline-none" placeholder="nom_page" />
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-neutral-500 text-[10px] uppercase mb-2 tracking-[0.2em] font-black">Texte du Bouton</label>
+                  <input type="text" value={billboardData.buttonText} onChange={e => setBillboardData({...billboardData, buttonText: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-4 text-white focus:border-amber-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-neutral-500 text-[10px] uppercase mb-2 tracking-[0.2em] font-black">Lien de redirection</label>
+                  <input type="text" value={billboardData.link} onChange={e => setBillboardData({...billboardData, link: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-4 text-white focus:border-amber-500 outline-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-neutral-500 text-[10px] uppercase mb-2 tracking-[0.2em] font-black">URL de l'image de fond</label>
+                <div className="flex gap-4 items-center">
+                  <input type="text" value={billboardData.image} onChange={e => setBillboardData({...billboardData, image: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-4 text-white focus:border-amber-500 outline-none" placeholder="https://..." />
+                  <div className="w-20 h-20 bg-neutral-800 border border-neutral-700 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                    {billboardData.image ? <img src={billboardData.image} className="w-full h-full object-cover" /> : <ImageIcon size={24} className="text-neutral-600" />}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          
-          <div className="flex justify-end"><Button type="submit" disabled={isSaving} className="px-12 py-4"><Save size={18} /> Sauvegarder</Button></div>
+          <div className="flex justify-end"><Button type="submit" disabled={isSaving} className="px-12 py-4"><Save size={18} /> Publier la Publicité</Button></div>
         </form>
       )}
 
@@ -161,29 +224,105 @@ const Settings: React.FC = () => {
                     </div>
                  </div>
                ))}
+               {contactData.whatsAppAgents.length === 0 && (
+                 <p className="text-center py-12 text-neutral-600 italic">Aucun agent configuré.</p>
+               )}
              </div>
           </div>
-          
-          {editingAgent && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95">
-              <div className="bg-neutral-900 border border-[#25D366]/40 p-10 w-full max-w-lg shadow-2xl">
-                 <h3 className="text-2xl font-serif text-[#25D366] mb-8">Fiche Conseiller</h3>
-                 <div className="space-y-6">
-                   <input type="text" value={editingAgent.name || ''} onChange={e => setEditingAgent({...editingAgent, name: e.target.value})} className="w-full bg-black border border-neutral-700 p-4 text-white outline-none focus:border-[#25D366]" placeholder="Nom & Rôle" />
-                   <input type="text" value={editingAgent.phone || ''} onChange={e => setEditingAgent({...editingAgent, phone: e.target.value})} className="w-full bg-black border border-neutral-700 p-4 text-white outline-none focus:border-[#25D366] font-mono" placeholder="+223" />
-                   <select value={editingAgent.role || 'retail'} onChange={e => setEditingAgent({...editingAgent, role: e.target.value as any})} className="w-full bg-black border border-neutral-700 p-4 text-white outline-none focus:border-[#25D366]">
-                     <option value="retail">Service Client / Détail</option>
-                     <option value="wholesale">Ventes en Gros</option>
-                     <option value="export">Service Export</option>
-                   </select>
-                   <div className="pt-8 flex gap-4">
-                     <button onClick={() => setEditingAgent(null)} className="flex-1 py-4 text-neutral-500 font-bold uppercase tracking-widest text-xs">Annuler</button>
-                     <Button onClick={saveAgent} fullWidth className="bg-[#25D366] text-black">Enregistrer</Button>
-                   </div>
-                 </div>
+        </div>
+      )}
+
+      {activeTab === 'appearance' && (
+        <form onSubmit={handleAppearanceSubmit} className="space-y-8 animate-fade-in">
+          <div className="bg-black border border-amber-900/30 p-8 shadow-2xl">
+            <h2 className="text-xl font-serif text-amber-100 mb-8 flex items-center gap-2"><Monitor size={20} className="text-amber-500" /> Design du Site</h2>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-neutral-500 text-[10px] uppercase mb-2 tracking-[0.2em] font-black">Titre Principal (Hero)</label>
+                <input type="text" value={appearanceData.heroTitle} onChange={e => setAppearanceData({...appearanceData, heroTitle: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-4 text-white focus:border-amber-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-neutral-500 text-[10px] uppercase mb-2 tracking-[0.2em] font-black">Slogan de la Maison</label>
+                <input type="text" value={appearanceData.heroSlogan} onChange={e => setAppearanceData({...appearanceData, heroSlogan: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-4 text-white focus:border-amber-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-neutral-500 text-[10px] uppercase mb-2 tracking-[0.2em] font-black">Image d'accueil (URL)</label>
+                <input type="text" value={appearanceData.heroImage} onChange={e => setAppearanceData({...appearanceData, heroImage: e.target.value})} className="w-full bg-neutral-900 border border-neutral-700 p-4 text-white focus:border-amber-500 outline-none" />
               </div>
             </div>
-          )}
+          </div>
+          <div className="flex justify-end"><Button type="submit" disabled={isSaving} className="px-12 py-4"><Save size={18} /> Enregistrer le Design</Button></div>
+        </form>
+      )}
+
+      {activeTab === 'security' && (
+        <div className="space-y-8 animate-fade-in">
+          <div className="bg-black border border-red-900/30 p-8 shadow-2xl">
+            <h2 className="text-xl font-serif text-red-500 mb-8 flex items-center gap-2"><Lock size={20} /> Sécurité de l'accès</h2>
+            <p className="text-neutral-400 text-sm mb-8">Utilisez ces paramètres pour sécuriser votre accès à l'interface d'administration.</p>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-neutral-500 text-[10px] uppercase mb-2 tracking-[0.2em] font-black">Email Administrateur</label>
+                <input type="email" value={user?.email || ''} readOnly className="w-full bg-neutral-950 border border-neutral-800 p-4 text-neutral-500 outline-none cursor-not-allowed" />
+              </div>
+              <div className="pt-4">
+                <Button variant="outline" className="border-red-900/50 text-red-500 hover:bg-red-950/20">Changer le mot de passe</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal WhatsApp Agent */}
+      {editingAgent && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+           <div className="bg-neutral-900 border border-amber-900/40 w-full max-w-md p-8 shadow-2xl relative">
+              <button onClick={() => setEditingAgent(null)} className="absolute top-4 right-4 text-neutral-500 hover:text-white"><X size={24}/></button>
+              <h3 className="text-2xl font-serif text-amber-500 mb-8 flex items-center gap-3">
+                <WhatsAppIcon size={24}/> {editingAgent.id ? 'Modifier l\'Expert' : 'Nouvel Expert'}
+              </h3>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-neutral-500 text-[10px] uppercase mb-2 tracking-[0.2em] font-black">Nom de l'Expert</label>
+                  <input 
+                    type="text" 
+                    value={editingAgent.name || ''} 
+                    onChange={e => setEditingAgent({...editingAgent, name: e.target.value})}
+                    className="w-full bg-black border border-neutral-800 p-4 text-white focus:border-amber-500 outline-none"
+                    placeholder="Ex: Aminata Diop"
+                  />
+                </div>
+                <div>
+                  <label className="block text-neutral-500 text-[10px] uppercase mb-2 tracking-[0.2em] font-black">Numéro WhatsApp</label>
+                  <input 
+                    type="text" 
+                    value={editingAgent.phone || ''} 
+                    onChange={e => setEditingAgent({...editingAgent, phone: e.target.value})}
+                    className="w-full bg-black border border-neutral-800 p-4 text-white focus:border-amber-500 outline-none font-mono"
+                    placeholder="+223..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-neutral-500 text-[10px] uppercase mb-2 tracking-[0.2em] font-black">Spécialisation</label>
+                  <select 
+                    value={editingAgent.role || 'retail'} 
+                    onChange={e => setEditingAgent({...editingAgent, role: e.target.value as any})}
+                    className="w-full bg-black border border-neutral-800 p-4 text-white focus:border-amber-500 outline-none appearance-none"
+                  >
+                    <option value="retail">Service Client (Détail)</option>
+                    <option value="wholesale">Direction Commerciale (Gros)</option>
+                    <option value="export">Service Export (International)</option>
+                    <option value="general">Assistance Générale</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="mt-10 flex gap-4">
+                <Button variant="ghost" fullWidth onClick={() => setEditingAgent(null)}>Annuler</Button>
+                <Button fullWidth onClick={saveAgent}>Enregistrer</Button>
+              </div>
+           </div>
         </div>
       )}
     </div>

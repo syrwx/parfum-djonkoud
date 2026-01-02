@@ -15,7 +15,10 @@ const HeritagePrive: React.FC = () => {
     
     const phone = agent.phone.replace(/[^0-9]/g, '');
     const message = encodeURIComponent(`Bonjour, je souhaite commander une pièce de la Collection Privée Héritage : *${productName}*. ✨👑`);
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    const waUrl = `https://wa.me/${phone}?text=${message}`;
+    
+    // Correction iOS : Redirection directe pour éviter le blocage Safari
+    window.location.href = waUrl;
   };
 
   const collection = [
